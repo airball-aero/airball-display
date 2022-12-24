@@ -1,0 +1,118 @@
+#ifndef AIRBALL_FRAMEWORK_APPLICATION_H
+#define AIRBALL_FRAMEWORK_APPLICATION_H
+
+#include <functional>
+#include <memory>
+#include <vector>
+#include <thread>
+#include <mutex>
+
+#include "IScreen.h"
+#include "IView.h"
+#include "ISoundScheme.h"
+
+namespace airball {
+
+template <typename Model>
+class Application {
+public:
+  explicit Application()
+      : running_(true) {
+    eventQueue_.reset(new EventQueueImpl(&eventsMu_, &events_));
+  }
+
+  virtual ~Application() = default;
+
+  bool running() {
+    std::lock_guard<std::mutex> lock(runningMu_);
+    return running_;
+  }
+
+  void run() {
+    initialize();
+    while (running()) {
+      auto start = std::chrono::steady_clock::now();
+      {
+        std::lock_guard<std::mutex> lock(runningMu_);
+        for (const auto & event : events_) {
+          event();
+        }
+        events_.clear();
+      }
+      // view_->paint(*model_, screen_.get());
+      std::cout << ".";
+      screen_->flush();
+      std::this_thread::sleep_for(
+          frameInterval_ -
+          (std::chrono::steady_clock::now() - start));
+    }
+  }
+
+  // The EventQueue is the only item that deeply nested parts of the Model
+  // need to know about. All other aspects of the Application should be
+  // kept at the top level only.
+  class EventQueue {
+    virtual void enqueue(std::function<void()> event) = 0;
+  };
+
+  void stop() {
+    std::lock_guard<std::mutex> lock(runningMu_);
+    running_ = false;
+  }
+
+protected:
+  // The application's data model
+  void setModel(std::unique_ptr<Model> m) { model_ = std::move(m); }
+
+  // The user interfaces for visuals and sound
+  void setView(std::unique_ptr<IView<Model>> v) { view_ = std::move(v); };
+  void setSoundScheme(std::unique_ptr<ISoundScheme<Model>> s) { soundScheme_ = std::move(s); };
+
+  // The output devices for visuals and sound
+  void setScreen(std::unique_ptr<IScreen> s) { screen_ = std::move(s); };
+  void setSoundMixer(std::unique_ptr<ISoundMixer> m) { soundMixer_ = std::move(m); }
+
+  void setFrameInterval(std::chrono::duration<double, std::milli> i) { frameInterval_ = i; }
+
+  EventQueue* eventQueue() { return eventQueue_; }
+
+  virtual void initialize() = 0;
+
+private:
+  class EventQueueImpl : public Application<Model>::EventQueue {
+  public:
+    EventQueueImpl(std::mutex* mu,
+                   std::vector<std::function<void()>>* q)
+        : mu_(mu), q_(q) {}
+
+    void enqueue(std::function<void()> event) override {
+      std::lock_guard<std::mutex> lock(*mu_);
+      q_->push_back(event);
+    }
+
+  private:
+    std::mutex* mu_;
+    std::vector<std::function<void()>>* q_;
+  };
+
+  std::unique_ptr<Model> model_;
+  std::unique_ptr<IView<Model>> view_;
+  std::unique_ptr<ISoundScheme<Model>> soundScheme_;
+
+  std::unique_ptr<IScreen> screen_;
+  std::unique_ptr<ISoundMixer> soundMixer_;
+
+  std::chrono::duration<double, std::milli> frameInterval_;
+
+  std::unique_ptr<EventQueue> eventQueue_;
+
+  std::mutex eventsMu_;
+  std::vector<std::function<void()>> events_;
+
+  std::mutex runningMu_;
+  bool running_;
+};
+
+} // namespace airball
+
+#endif // AIRBALL_FRAMEWORK_APPLICATION_H

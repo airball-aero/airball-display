@@ -1,0 +1,32 @@
+add_library(airball_screen_linux
+        framebuffer_screen.cpp
+        image_screen.cpp
+        x11_screen.cpp)
+target_link_libraries(airball_screen_linux
+        X11 cairo)
+
+if (AIRBALL_BCM2835)
+
+    add_library(bcm2835_smi_ioctl_defs
+            bcm2835_smi_ioctl_defs.cpp)
+    target_include_directories(bcm2835_smi_ioctl_defs PRIVATE
+            /usr/src/linux-headers-5.10.103-v7+/include)
+
+    add_library(airball_screen_bcm2835
+            bcm2835_smi_ioctl_defs.cpp
+            st7789vi_frame_writer.cpp
+            st7789vi_frame_writer_gpio.cpp
+            st7789vi_frame_writer_smi.cpp
+            st7789vi_screen.cpp)
+    target_link_libraries(airball_screen_bcm2835
+            bcm2835_smi_ioctl_defs)
+
+    add_executable(st7789vi_frame_writer_test
+            st7789vi_frame_writer_test_main.cpp)
+    target_link_libraries(st7789vi_frame_writer_test
+            airball_screen_raspi)
+
+endif ()
+
+add_executable(fb_fps_test
+        fb_fps_test_main.cpp)

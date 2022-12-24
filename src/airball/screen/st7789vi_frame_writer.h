@@ -1,0 +1,39 @@
+#ifndef AIRBALL_SCREEN_ST7789VI_FRAME_WRITER_H
+#define AIRBALL_SCREEN_ST7789VI_FRAME_WRITER_H
+
+#include <stdint.h>
+#include <cstddef>
+
+namespace airball {
+
+class st7789vi_frame_writer {
+ public:
+  st7789vi_frame_writer() = default;
+  virtual ~st7789vi_frame_writer() = default;
+
+  virtual void initialize();
+
+  void write_frame(uint16_t* frame, int len);
+
+  void set_brightness(uint8_t brightness);
+
+protected:
+  constexpr static unsigned char kPinStateLow  = 0;
+  constexpr static unsigned char kPinStateHigh = 1;
+
+  void write_single_gpio(unsigned char bit, unsigned char state);
+  void fail(const char *msg);
+
+  virtual void write_data(uint16_t* buf, int len) = 0;
+
+private:
+  void command_out(uint8_t c);
+  void delay(uint16_t ms);
+  void write_word(uint16_t b);
+  void data_out(uint16_t d);
+  void data_out(uint8_t d0, uint8_t d1);
+};
+
+} // namespace airball
+
+#endif // AIRBALL_SCREEN_ST7789VI_FRAME_WRITER_H

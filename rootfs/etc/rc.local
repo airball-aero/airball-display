@@ -1,0 +1,39 @@
+#!/bin/sh -e
+
+# https://raspberrypi.stackexchange.com/questions/27475/wifi-disconnects-after-period-of-time-on-raspberry-pi-doesnt-reconnect
+
+iw dev wlan0 set power_save off
+
+# Logging to be enabled for development only. Otherwise,
+# the disk will be filled with logs from flask!
+#
+# exec 1>/tmp/rc.local.log 2>&1
+# set -x
+
+while ! /usr/sbin/ifconfig wlan0 | /usr/bin/grep -q 'inet ' ; do
+    echo 'wlan0 not yet up'
+    /usr/sbin/ifconfig    
+    /usr/bin/sleep 0.5
+done
+
+echo -e '\033[?17;0;0c' > /dev/tty1
+echo -e '\033[9;0]'     > /dev/tty1
+
+/usr/bin/sleep 1
+
+systemctl stop hostapd
+systemctl start hostapd
+
+/var/www/server.py &
+
+if [ -f /var/run/pigpio.pid ]; then
+   rm /var/run/pigpio.pid
+fi
+
+/home/pi/airball-embedded/host/build/display/ab \
+    --screen st7789vi \
+    --telemetry esp32 \
+    --audio_device hw:0 \
+    --settings_path /var/www/airball-settings.json &
+
+exit 0
