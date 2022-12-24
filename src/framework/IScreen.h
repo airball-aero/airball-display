@@ -1,5 +1,5 @@
-#ifndef AIRBALL_FRAMEWORK_ISCREEN_H
-#define AIRBALL_FRAMEWORK_ISCREEN_H
+#ifndef AIRBALL_FRAMEWORK_I_SCREEN_H
+#define AIRBALL_FRAMEWORK_I_SCREEN_H
 
 #include <cairo/cairo.h>
 
@@ -23,4 +23,4 @@ public:
 
 } // namespace airball
 
-#endif // AIRBALL_FRAMEWORK_ISCREEN_H
+#endif // AIRBALL_FRAMEWORK_I_SCREEN_H

@@ -1,5 +1,5 @@
-#ifndef FRAMEWORK_VIEW_H
-#define FRAMEWORK_VIEW_H
+#ifndef AIRBALL_FRAMEWORK_I_VIEW_H
+#define AIRBALL_FRAMEWORK_I_VIEW_H
 
 #include "IScreen.h"
 
@@ -13,4 +13,4 @@ public:
 
 } // namespace airball
 
-#endif // FRAMEWORK_VIEW_H
+#endif // AIRBALL_FRAMEWORK_I_VIEW_H
