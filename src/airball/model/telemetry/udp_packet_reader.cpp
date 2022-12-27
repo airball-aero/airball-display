@@ -8,7 +8,9 @@
 namespace airball {
 
 UdpPacketReader::UdpPacketReader(int receive_port)
-    : receive_port_(receive_port), socket_fd_(0) {}
+    : receive_port_(receive_port), socket_fd_(0) {
+  open();
+}
 
 UdpPacketReader::~UdpPacketReader() {
   if (socket_fd_ != 0) {
@@ -35,7 +37,7 @@ bool UdpPacketReader::open() {
   return true;
 }
 
-std::string UdpPacketReader::read_packet() {
+std::string UdpPacketReader::readLine() {
   sockaddr_in sender_address{};
   socklen_t sender_address_len = sizeof(sender_address);
   ssize_t result = recvfrom(socket_fd_, &receive_buffer_,

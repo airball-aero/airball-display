@@ -10,6 +10,7 @@
 #include "IScreen.h"
 #include "IView.h"
 #include "ISoundScheme.h"
+#include "IEventQueue.h"
 
 namespace airball {
 
@@ -40,20 +41,12 @@ public:
         events_.clear();
       }
       // view_->paint(*model_, screen_.get());
-      std::cout << ".";
       screen_->flush();
       std::this_thread::sleep_for(
           frameInterval_ -
           (std::chrono::steady_clock::now() - start));
     }
   }
-
-  // The EventQueue is the only item that deeply nested parts of the Model
-  // need to know about. All other aspects of the Application should be
-  // kept at the top level only.
-  class EventQueue {
-    virtual void enqueue(std::function<void()> event) = 0;
-  };
 
   void stop() {
     std::lock_guard<std::mutex> lock(runningMu_);
@@ -74,12 +67,12 @@ protected:
 
   void setFrameInterval(std::chrono::duration<double, std::milli> i) { frameInterval_ = i; }
 
-  EventQueue* eventQueue() { return eventQueue_; }
+  IEventQueue* eventQueue() { return eventQueue_.get(); }
 
   virtual void initialize() = 0;
 
 private:
-  class EventQueueImpl : public Application<Model>::EventQueue {
+  class EventQueueImpl : public IEventQueue {
   public:
     EventQueueImpl(std::mutex* mu,
                    std::vector<std::function<void()>>* q)
@@ -104,7 +97,7 @@ private:
 
   std::chrono::duration<double, std::milli> frameInterval_;
 
-  std::unique_ptr<EventQueue> eventQueue_;
+  std::unique_ptr<IEventQueue> eventQueue_;
 
   std::mutex eventsMu_;
   std::vector<std::function<void()>> events_;

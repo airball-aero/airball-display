@@ -1,5 +1,5 @@
-#ifndef AIRBALL_APP_ISETTINGS_H
-#define AIRBALL_APP_ISETTINGS_H
+#ifndef AIRBALL_MODEL_I_SETTINGS_H
+#define AIRBALL_MODEL_I_SETTINGS_H
 
 #include <string>
 
@@ -145,4 +145,4 @@ public:
 
 } // namespace airball
 
-#endif // AIRBALL_APP_ISETTINGS_H
+#endif // AIRBALL_MODEL_I_SETTINGS_H

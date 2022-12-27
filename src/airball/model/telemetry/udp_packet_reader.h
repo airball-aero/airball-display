@@ -3,19 +3,22 @@
 
 #include <cstddef>
 #include <string>
+#include "ILineReader.h"
 
 namespace airball {
 
-class UdpPacketReader {
+class UdpPacketReader : public ILineReader {
 public:
-  UdpPacketReader(int receive_port);
+  explicit UdpPacketReader(int receive_port);
   ~UdpPacketReader();
 
-  bool open();
+  std::string readLine() override;
 
-  std::string read_packet();
+  std::string foo() override { return "foo"; }
 
 private:
+  bool open();
+
   const static size_t kReceiveBufferLength = 1024;
 
   const int receive_port_;

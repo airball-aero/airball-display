@@ -8,21 +8,16 @@ namespace airball {
 class IAirdata {
 public:
   struct Ball {
-    const double alpha;
-    const double beta;
-    const double ias;
-    const double tas;
+    double alpha;
+    double beta;
+    double ias;
+    double tas;
   };
 
   virtual double altitude() const = 0;
-
   virtual double climb_rate() const = 0;
-
-  // Returns true if the data is valid
   virtual bool valid() const = 0;
-
   virtual const Ball& smooth_ball() const = 0;
-
   virtual const std::vector<Ball>& raw_balls() const = 0;
 };
 
