@@ -4,11 +4,13 @@
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <unistd.h>
+#include <cstring>
 
 namespace airball {
 
 UdpPacketReader::UdpPacketReader(int receive_port)
     : receive_port_(receive_port), socket_fd_(0) {
+  memset(receive_buffer_, 0, sizeof(receive_buffer_));
   open();
 }
 
