@@ -15,7 +15,7 @@ struct Model {
 };
 
 constexpr static Model kAirdataBaro {
-    .min = 65000,
+    .min = 40000,
     .max = 70000,
 };
 

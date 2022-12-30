@@ -9,7 +9,7 @@ namespace airball {
 
 class X11Screen : public AbstractScreen {
 public:
-  X11Screen(int x, int y);
+  X11Screen(int width, int height);
 
   ~X11Screen() override;
 

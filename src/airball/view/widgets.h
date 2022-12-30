@@ -1,11 +1,12 @@
-#ifndef AIRBALL_WIDGETS_H
-#define AIRBALL_WIDGETS_H
+#ifndef SRC_AIRBALL_WIDGETS_H
+#define SRC_AIRBALL_WIDGETS_H
 
 #include <string>
 #include <vector>
 #include <cairo/cairo.h>
 
 #include <iostream>
+
 namespace airball {
 
 // Basic classes
@@ -81,6 +82,21 @@ private:
   std::string face_;
   double size_;
 };
+
+std::ostream&
+operator<<(std::ostream& os, const Color& c);
+
+std::ostream&
+operator<<(std::ostream& os, const Point& p);
+
+std::ostream&
+operator<<(std::ostream& os, const Size& s);
+
+std::ostream&
+operator<<(std::ostream& os, const Stroke& s);
+
+std::ostream&
+operator<<(std::ostream& os, const Font& f);
 
 void line(
     cairo_t* cr,
@@ -165,4 +181,4 @@ void draw_text(
 
 } // namespace airball
 
-#endif // AIRBALL_WIDGETS_H
+#endif // SRC_AIRBALL_WIDGETS_H

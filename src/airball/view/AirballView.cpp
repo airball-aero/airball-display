@@ -168,7 +168,7 @@ void PaintCycle::layout() {
   height_ = model_.settings()->screen_height();
 
   if (model_.settings()->show_altimeter()) {
-    altimeterHeight_ = 48;
+    altimeterHeight_ = 40;
     airballHeight_ = height_ - altimeterHeight_;
   } else {
     altimeterHeight_ = 0;
@@ -256,7 +256,7 @@ void PaintCycle::layout() {
       width_ / 6.0;
 
   iASTextFont_ = Font(
-      fontName_.c_str(),
+      fontName_,
       iASTextFontSize_);
 
   iASTextMargin_ =
@@ -269,6 +269,9 @@ void PaintCycle::layout() {
   noFlightDataStroke_ = Stroke(
       Color(255, 0, 0),
       3);
+
+  statusTextFont_ = Font(fontName_, 12);
+  statusTextColor_ = Color(255, 255, 255);
 
   linkColor_ = Color(0, 180, 180);
 
@@ -310,10 +313,10 @@ void PaintCycle::layout() {
       Color(255, 0, 255),
       4);
   altimeterFontLarge_ = Font(
-      fontName_.c_str(),
+      fontName_,
       width_ / 8);
   altimeterFontSmall_ = Font(
-      fontName_.c_str(),
+      fontName_,
       width_ / 12);
   altimeterTextColor_= Color(255, 255, 255);
   altimeterBackgroundColor_ = Color(64, 64, 64);
@@ -325,7 +328,7 @@ void PaintCycle::layout() {
   baroLeftOffset_ =
       width_ / 12;
   baroFontSmall_ = Font(
-      fontName_.c_str(),
+      fontName_,
       width_ / 20);
   baroTextColor_ = Color(255, 255, 255);
 }
@@ -378,6 +381,11 @@ void PaintCycle::paint() {
     cairo_rotate(screen_->cr(), -M_PI / 2);
   }
 
+  cairo_save(screen_->cr());
+
+  cairo_rectangle(screen_->cr(), 0, 0, width_, airballHeight_);
+  cairo_clip(screen_->cr());
+
   paintBackground();
 
   if (model_.airdata()->valid()) {
@@ -391,8 +399,14 @@ void PaintCycle::paint() {
   paintCowCatcher();
   paintUnitsAnnotation();
 
-  if (model_.settings()->show_altimeter() && false) {
+  cairo_restore(screen_->cr());
+
+  if (model_.settings()->show_altimeter()) {
+    cairo_save(screen_->cr());
+    cairo_rectangle(screen_->cr(), 0, airballHeight_ + displayMargin_, width_, vsiHeight_);
+    cairo_clip(screen_->cr());
     paintVsi();
+    cairo_restore(screen_->cr());
   }
 
   // cairo_restore(screen_->cr());
@@ -1050,6 +1064,7 @@ void PaintCycle::paintAltitude(
                         * altimeterBaselineRatio_,
       center_left.y());
   char buf[printBufSize_];
+  memset(buf, 0, sizeof(buf));
   // Print the thousands string
   if (thousands == 0) {
     if (altitude < 0) {

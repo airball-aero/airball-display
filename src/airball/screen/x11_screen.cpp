@@ -9,10 +9,10 @@
 
 namespace airball {
 
-X11Screen::X11Screen(const int xx, const int yy) {
+X11Screen::X11Screen(const int width, const int height) {
   Display* display = XOpenDisplay(nullptr);
   Window w = XCreateSimpleWindow(display, DefaultRootWindow(display), 0, 0,
-                                 800, 600, 0, 0, 0);
+                                 width, height, 0, 0, 0);
   XSelectInput(display, w, StructureNotifyMask);
   XMapWindow(display, w);
 
@@ -27,8 +27,8 @@ X11Screen::X11Screen(const int xx, const int yy) {
   }
 
   set_cs(cairo_xlib_surface_create(
-      display, w, DefaultVisual(display, DefaultScreen(display)), xx, yy));
-  cairo_xlib_surface_set_size(cs(), xx, yy);
+      display, w, DefaultVisual(display, DefaultScreen(display)), width, height));
+  cairo_xlib_surface_set_size(cs(), width, height);
   set_cr(cairo_create(cs()));
 }
 

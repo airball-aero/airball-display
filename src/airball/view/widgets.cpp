@@ -6,6 +6,25 @@
 
 namespace airball {
 
+void Color::apply(cairo_t *cr) const {
+  cairo_set_source_rgba(cr, r_, g_, b_, a_);
+}
+
+void Stroke::apply(cairo_t *cr) const {
+  cairo_set_line_width(cr, width_);
+  cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
+  color_.apply(cr);
+}
+
+void Font::apply(cairo_t *cr) const {
+  cairo_select_font_face(
+      cr,
+      face().c_str(),
+      CAIRO_FONT_SLANT_NORMAL,
+      CAIRO_FONT_WEIGHT_BOLD);
+  cairo_set_font_size(cr, size_);
+}
+
 std::ostream&
 operator<<(std::ostream& os, const Color& c) {
   os << "Color(" << c.r() << "," << c.g() << "," << c.b() << "," << c.a() << ")";
@@ -34,25 +53,6 @@ std::ostream&
 operator<<(std::ostream& os, const Font& f) {
   os << "Font(" << f.face() << "," << f.size() << ")";
   return os;
-}
-
-void Color::apply(cairo_t *cr) const {
-  cairo_set_source_rgba(cr, r_, g_, b_, a_);
-}
-
-void Stroke::apply(cairo_t *cr) const {
-  cairo_set_line_width(cr, width_);
-  cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
-  color_.apply(cr);
-}
-
-void Font::apply(cairo_t *cr) const {
-  cairo_select_font_face(
-      cr,
-      face().c_str(),
-      CAIRO_FONT_SLANT_NORMAL,
-      CAIRO_FONT_WEIGHT_BOLD);
-  cairo_set_font_size(cr, size_);
 }
 
 void line(
@@ -267,7 +267,7 @@ void draw_text(
     const TextReferencePoint ref,
     const Font& font,
     const Color& color) {
-//   std::cout << "text(\"" << str << "\"," << point << "," << ref << "," << font << ")" << std::endl;
+  // std::cout << "text(\"" << str << "\"," << point << "," << ref << "," << font << "," << color << ")" << std::endl;
   font.apply(cr);
   color.apply(cr);
   switch (ref) {

@@ -47,7 +47,7 @@ private:
 
 std::unique_ptr<IScreen> buildScreen() {
   if (FLAGS_screen == kScreenX11) {
-    return std::make_unique<X11Screen>(400, 300);
+    return std::make_unique<X11Screen>(600, 800);
   }
   if (FLAGS_screen == kScreenImage) {
     return std::make_unique<ImageScreen>(400, 300);
