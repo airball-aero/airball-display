@@ -21,6 +21,9 @@ public:
   ImageScreen(int w, int h);
 
   void flush() override;
+
+private:
+  unsigned long image_index_;
 };
 
 }  // namespace airball
