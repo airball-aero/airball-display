@@ -49,12 +49,12 @@ private:
   std::unique_ptr<ISettings> settings_;
 };
 
-std::unique_ptr<IScreen> buildScreen() {
+std::unique_ptr<IScreen> buildScreen(const ISettings* settings) {
   if (FLAGS_screen == kScreenX11) {
-    return std::make_unique<X11Screen>(600, 800);
+    return std::make_unique<X11Screen>(settings->screen_width(), settings->screen_height());
   }
   if (FLAGS_screen == kScreenImage) {
-    return std::make_unique<ImageScreen>(400, 300);
+    return std::make_unique<ImageScreen>(settings->screen_width(), settings->screen_height());
   }
 #ifdef AIRBALL_BCM2835
   if (FLAGS_screen = kScreenSt7789vi) {
@@ -87,10 +87,10 @@ public:
 protected:
   void initialize() override {
     setFrameInterval(kFrameInterval);
-    setScreen(buildScreen());
     auto settings = std::make_unique<Settings>(
         FLAGS_settings_path,
         eventQueue());
+    setScreen(buildScreen(settings.get()));
     setModel(std::make_unique<AirballModel>(
         std::move(std::make_unique<Airdata>(
             eventQueue(),
