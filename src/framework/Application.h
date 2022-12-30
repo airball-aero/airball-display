@@ -34,7 +34,7 @@ public:
     while (running()) {
       auto start = std::chrono::steady_clock::now();
       {
-        std::lock_guard<std::mutex> lock(runningMu_);
+        std::lock_guard<std::mutex> lock(eventsMu_);
         for (const auto & event : events_) {
           event();
         }
