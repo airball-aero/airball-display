@@ -1,3 +1,5 @@
+#include "../model/Settings.h"
+
 #include <iostream>
 #include <memory>
 #include "gflags/gflags.h"
@@ -5,25 +7,28 @@
 #include "../../framework/Application.h"
 #include "../model/IAirballModel.h"
 #include "../screen/x11_screen.h"
-#include "../model/telemetry/ILineReader.h"
-#include "../model/telemetry/udp_packet_reader.h"
+#include "../model/telemetry/UdpTelemetry.h"
+#include "../model/telemetry/FakeTelemetry.h"
 #include "../model/Airdata.h"
 #include "../model/ISettings.h"
-#include "../model/Settings.h"
+#include "../view/AirballView.h"
+#include "../screen/image_screen.h"
 
 const std::string kScreenX11 = "x11";
 const std::string kScreenSt7789vi = "st7789vi";
-DEFINE_string(screen, kScreenX11, "Screen implementation (x11, st7789vi)");
+const std::string kScreenImage = "image";
+DEFINE_string(screen, kScreenX11, "Screen implementation (x11, image,st7789vi)");
 
-const std::string kLineReaderUdp = "udp";
-const std::string kLineReaderLog = "log";
-DEFINE_string(line_reader, kLineReaderUdp, "Line reader (udp, log)");
-DEFINE_uint32(line_reader_udp_port, 30123, "Listening port for UDP line reader");
-DEFINE_string(line_reader_log_path, "airball.log", "File path for log line reader");
+const std::string kTelemetryUdp = "udp";
+const std::string kTelemetryLog = "log";
+const std::string kTelemetryFake = "fake";
+DEFINE_string(telemetry, kTelemetryFake, "Telemetry (udp, log, fake)");
+DEFINE_uint32(telemetry_udp_port, 30123, "Listening port for UDP line reader");
+DEFINE_string(telemetry_log_path, "airball.log", "File path for log line reader");
 
 DEFINE_string(settings_path, "airball-settings.json", "Path to settings file");
 
-const auto kFrameInterval = std::chrono::duration<double, std::milli>(50);
+const auto kFrameInterval = std::chrono::milliseconds(50);
 
 namespace airball {
 
@@ -44,23 +49,29 @@ std::unique_ptr<IScreen> buildScreen() {
   if (FLAGS_screen == kScreenX11) {
     return std::make_unique<X11Screen>(400, 300);
   }
+  if (FLAGS_screen == kScreenImage) {
+    return std::make_unique<ImageScreen>(400, 300);
+  }
   #ifdef AIRBALL_BCM2835
   if (FLAGS_screen = kScreenSt7789vi) {
     return new St7789viScreen(400, 300);
   }
   #endif
-
+  std::cerr << "Unsupported screen option " << FLAGS_screen << std::endl;
   exit(-1);
 }
 
-std::unique_ptr<ILineReader> buildLineReader() {
-  if (FLAGS_line_reader == kLineReaderUdp) {
-    return std::make_unique<UdpPacketReader>(
-        FLAGS_line_reader_udp_port);
+std::unique_ptr<ITelemetry> buildTelemetry() {
+  if (FLAGS_telemetry == kTelemetryUdp) {
+    return std::make_unique<UdpTelemetry>(FLAGS_telemetry_udp_port);
   }
-  if (FLAGS_line_reader == kLineReaderLog) {
-    exit(-1);
+  if (FLAGS_telemetry == kTelemetryLog) {
+    std::cerr << "Log telemetry is not yet supported, sorry!" << std::endl;
   }
+  if (FLAGS_telemetry == kTelemetryFake) {
+    return std::make_unique<FakeTelemetry>();
+  }
+  std::cerr << "Unsupported telemetry option " << FLAGS_telemetry << std::endl;
   exit(-1);
 }
 
@@ -76,13 +87,13 @@ protected:
     auto settings = std::make_unique<Settings>(
         FLAGS_settings_path,
         eventQueue());
-    auto lineReader = buildLineReader();
     setModel(std::make_unique<AirballModel>(
         std::move(std::make_unique<Airdata>(
             eventQueue(),
-            std::move(lineReader),
+            std::move(buildTelemetry()),
             settings.get())),
         std::move(settings)));
+    setView(std::move(std::make_unique<AirballView>()));
   }
 };
 

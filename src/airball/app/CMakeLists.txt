@@ -6,7 +6,8 @@ target_link_libraries(ab
         gflags::gflags
         screen_linux
         util
-        model)
+        model
+        view)
 
 if (AIRBALL_BCM2835)
 

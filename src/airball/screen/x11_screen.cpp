@@ -9,31 +9,36 @@
 
 namespace airball {
 
-X11Screen::X11Screen(const int x, const int y) {
-  Display *dsp;
-  Drawable da;
-  int screen;
-  cairo_surface_t *sfc;
+X11Screen::X11Screen(const int xx, const int yy) {
+  Display* display = XOpenDisplay(nullptr);
+  Window w = XCreateSimpleWindow(display, DefaultRootWindow(display), 0, 0,
+                                 800, 600, 0, 0, 0);
+  XSelectInput(display, w, StructureNotifyMask);
+  XMapWindow(display, w);
 
-  if ((dsp = XOpenDisplay(NULL)) == NULL)
-    exit(1);
+  // Wait for the MapNotify event
 
-  screen = DefaultScreen(dsp);
-  da = XCreateSimpleWindow(
-      dsp, DefaultRootWindow(dsp),
-      0, 0, y, x, 0, 0, 0);
-  XSelectInput(dsp, da, ButtonPressMask | KeyPressMask);
-  XMapWindow(dsp, da);
+  for(;;) {
+    XEvent e;
+    XNextEvent(display, &e);
+    if (e.type == MapNotify) {
+      break;
+    }
+  }
 
   set_cs(cairo_xlib_surface_create(
-      dsp, da,
-      DefaultVisual(dsp, screen), y, x));
-  cairo_xlib_surface_set_size(cs(), y, x);
-
+      display, w, DefaultVisual(display, DefaultScreen(display)), xx, yy));
+  cairo_xlib_surface_set_size(cs(), xx, yy);
   set_cr(cairo_create(cs()));
+}
 
-  cairo_rotate(cr(), M_PI / 2);
-  cairo_translate(cr(), 0, -y);
+void X11Screen::flush() {
+  Display *display = cairo_xlib_surface_get_display(cs());
+  while (XPending(display)) {
+    XEvent ev;
+    XNextEvent(display, &ev);
+  }
+  XFlush(display);
 }
 
 X11Screen::~X11Screen() {

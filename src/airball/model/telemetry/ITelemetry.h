@@ -5,7 +5,7 @@
 
 namespace airball {
 
-class Telemetry {
+class ITelemetry {
 public:
   enum Type {
     UNKNOWN = 0,
@@ -29,13 +29,16 @@ public:
 
   struct Sample {
     Type type;
-    int sequence;
+    unsigned long sequence;
     union {
       Airdata airdata;
       Battery battery;
     };
   };
 
+  virtual Sample get() = 0;
+
+protected:
   static Sample parse(const std::string& message);
 };
 

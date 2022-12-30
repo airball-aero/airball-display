@@ -7,11 +7,22 @@ namespace airball {
 
 class IAirdata {
 public:
-  struct Ball {
-    double alpha;
-    double beta;
-    double ias;
-    double tas;
+  class Ball {
+  public:
+    Ball() : alpha_(0), beta_(0), ias_(0), tas_(0) {}
+    Ball(double alpha, double beta, double ias, double tas)
+        : alpha_(alpha), beta_(beta), ias_(ias), tas_(tas) {}
+
+    double alpha() const { return alpha_; }
+    double beta() const { return beta_; }
+    double ias() const { return ias_; }
+    double tas() const { return tas_; }
+
+  private:
+    double alpha_;
+    double beta_;
+    double ias_;
+    double tas_;
   };
 
   virtual double altitude() const = 0;

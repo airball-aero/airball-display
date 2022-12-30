@@ -9,24 +9,28 @@ namespace airball {
 
 constexpr int kClimbRateFilterSizeMin = 1;
 constexpr int kClimbRateFilterSizeMax = 100;
+constexpr double kSamplesPerSecond = 20;
 
 Airdata::Airdata(IEventQueue* eventQueue,
-                 std::unique_ptr<ILineReader> lineReader,
+                 std::unique_ptr<ITelemetry> telemetry,
                  ISettings* settings)
     : eventQueue_(eventQueue),
-      lineReader_(std::move(lineReader)),
+      telemetry_(std::move(telemetry)),
       settings_(settings),
       climb_rate_filter_(1),
-      valid_(true) {
+      valid_(true),
+      raw_balls_(kNumBalls),
+      altitude_(0),
+      climb_rate_(0) {
   start();
 }
 
 void Airdata::start() {
   updateThread_ = std::thread([&]() {
     while (true) {
-      Telemetry::Sample s = Telemetry::parse(lineReader_->readLine());
-      if (s.type == Telemetry::AIRDATA) {
-        eventQueue_->enqueue([&] () {
+      ITelemetry::Sample s = telemetry_->get();
+      if (s.type == ITelemetry::AIRDATA) {
+        eventQueue_->enqueue([this, s] () {
           update(s);
         });
       }
@@ -45,7 +49,7 @@ smooth(double current_value, double new_value, double smoothing_factor) {
          ((1.0 - smoothing_factor) * current_value);
 }
 
-void Airdata::update(const Telemetry::Sample d) {
+void Airdata::update(const ITelemetry::Sample d) {
   update(
       degrees_to_radians(d.airdata.alpha),
       degrees_to_radians(d.airdata.beta),
@@ -72,27 +76,21 @@ void Airdata::update(
   // If we allow NaN's to get through, they will "pollute" the smoothing
   // computation and every smoothed value thereafter will be NaN. This guard
   // is therefore necessary prior to using data as a smoothing filter input.
-  double new_alpha = isnan(alpha) ? smooth_ball_.alpha : alpha;
-  double new_beta = isnan(beta) ? smooth_ball_.beta : beta;
-  new_ias = isnan(new_ias) ? smooth_ball_.ias : new_ias;
-  new_tas = isnan(new_tas) ? smooth_ball_.tas : new_tas;
+  double new_alpha = isnan(alpha) ? smooth_ball_.alpha() : alpha;
+  double new_beta = isnan(beta) ? smooth_ball_.beta() : beta;
+  new_ias = isnan(new_ias) ? smooth_ball_.ias() : new_ias;
+  new_tas = isnan(new_tas) ? smooth_ball_.tas() : new_tas;
 
-  smooth_ball_ = {
-      .alpha = smooth(smooth_ball_.alpha, alpha, ball_smoothing_factor),
-      .beta = smooth(smooth_ball_.beta, beta, ball_smoothing_factor),
-      .ias = smooth(smooth_ball_.ias, new_ias, ball_smoothing_factor),
-      .tas = smooth(smooth_ball_.tas, new_tas, ball_smoothing_factor),
-  };
+  smooth_ball_ = Ball(
+      smooth(smooth_ball_.alpha(), alpha, ball_smoothing_factor),
+      smooth(smooth_ball_.beta(), beta, ball_smoothing_factor),
+      smooth(smooth_ball_.ias(), new_ias, ball_smoothing_factor),
+      smooth(smooth_ball_.tas(), new_tas, ball_smoothing_factor));
 
   for (size_t i = raw_balls_.size() - 1; i > 0; i--) {
     raw_balls_[i] = raw_balls_[i - 1];
   }
-  raw_balls_[0] = {
-    .alpha = new_alpha,
-    .beta = new_beta,
-    .ias = new_ias,
-    .tas = new_tas,
-  };
+  raw_balls_[0] = Ball(new_alpha, new_beta, new_ias, new_tas);
 
   pressure_altitude_ = pressure_to_altitude(t, p, QNH_STANDARD);
 

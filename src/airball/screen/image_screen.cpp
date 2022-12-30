@@ -1,23 +1,24 @@
 #include "image_screen.h"
 
 #include <cairo/cairo-xlib.h>
+#include <csignal>
 
 namespace airball {
 
 ImageScreen::ImageScreen(int w, int h) {
-  cs_ = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, w, h);
-  cr_ = cairo_create(cs_);
+  set_cs(cairo_image_surface_create(CAIRO_FORMAT_ARGB32, w, h));
+  set_cr(cairo_create(cs()));
 }
 
-ImageScreen::~ImageScreen() {
-  cairo_destroy(cr_);
-  cairo_surface_destroy(cs_);
+
+void write_to_png(cairo_surface_t* cs, std::string file_name) {
+  cairo_surface_write_to_png(cs, file_name.c_str());
+  cairo_surface_flush(cs);
 }
 
-void ImageScreen::write_to_png(std::string file_name) const {
-  cairo_surface_flush(cs_);
-  cairo_surface_write_to_png(cs_, file_name.c_str());
+void ImageScreen::flush() {
+  write_to_png(cs(), "image.png");
+  sync();
 }
-
 
 }  // namespace airball

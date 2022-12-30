@@ -24,9 +24,7 @@ if (AIRBALL_BCM2835)
     add_executable(st7789vi_frame_writer_test
             st7789vi_frame_writer_test_main.cpp)
     target_link_libraries(st7789vi_frame_writer_test
-            airball_screen_raspi)
+            screen_bcm2835)
 
 endif ()
 
-# add_executable(fb_fps_test
-#         fb_fps_test_main.cpp)

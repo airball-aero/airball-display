@@ -3,18 +3,15 @@
 
 #include <cstddef>
 #include <string>
-#include "ILineReader.h"
 
 namespace airball {
 
-class UdpPacketReader : public ILineReader {
+class UdpPacketReader {
 public:
   explicit UdpPacketReader(int receive_port);
   ~UdpPacketReader();
 
-  std::string readLine() override;
-
-  std::string foo() override { return "foo"; }
+  std::string readLine();
 
 private:
   bool open();

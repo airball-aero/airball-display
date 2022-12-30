@@ -40,7 +40,7 @@ public:
         }
         events_.clear();
       }
-      // view_->paint(*model_, screen_.get());
+      view_->paint(*model_, screen_.get());
       screen_->flush();
       std::this_thread::sleep_for(
           frameInterval_ -

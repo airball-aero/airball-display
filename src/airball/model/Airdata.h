@@ -4,31 +4,30 @@
 #include <string>
 #include "../../framework/Application.h"
 #include "../model/IAirdata.h"
-#include "telemetry/telemetry.h"
+#include "telemetry/ITelemetry.h"
 #include "../util/cubic_rate_filter.h"
 #include "ISettings.h"
 #include "IAirballModel.h"
-#include "telemetry/ILineReader.h"
 
 namespace airball {
 
 class Airdata : public IAirdata {
 public:
   Airdata(IEventQueue* eventQueue,
-          std::unique_ptr<ILineReader> lineReader,
+          std::unique_ptr<ITelemetry> telemetry,
           ISettings* settings);
 
   ~Airdata();
 
-  double altitude() const override { return altitude_; }
-  double climb_rate() const override { return climb_rate_; }
-  bool valid() const override { return valid_; }
-  const Ball& smooth_ball() const override { return smooth_ball_; }
-  const std::vector<Ball>& raw_balls() const override { return raw_balls_; }
+  [[nodiscard]] double altitude() const override { return altitude_; }
+  [[nodiscard]] double climb_rate() const override { return climb_rate_; }
+  [[nodiscard]] bool valid() const override { return valid_; }
+  [[nodiscard]] const Ball& smooth_ball() const override { return smooth_ball_; }
+  [[nodiscard]] const std::vector<Ball>& raw_balls() const override { return raw_balls_; }
 
 private:
   void start();
-  void update(Telemetry::Sample sample);
+  void update(ITelemetry::Sample sample);
 
   void update(
       double alpha,
@@ -40,11 +39,11 @@ private:
       double ball_smoothing_factor,
       double vsi_smoothing_factor);
 
-  static constexpr int kSamplesPerSecond = 20;
+  static constexpr int kSlineReaderamplesPerSecond = 20;
   static constexpr uint kNumBalls = 20;
 
   IEventQueue* eventQueue_;
-  std::unique_ptr<ILineReader> lineReader_;
+  std::unique_ptr<ITelemetry> telemetry_;
   ISettings* settings_;
 
   bool valid_;

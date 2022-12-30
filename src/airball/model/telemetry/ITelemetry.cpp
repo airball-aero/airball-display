@@ -1,4 +1,4 @@
-#include "telemetry.h"
+#include "ITelemetry.h"
 
 #include <vector>
 
@@ -18,11 +18,11 @@ std::vector<std::string> split_comma(const std::string& s) {
   return tokens;
 }
 
-Telemetry::Sample
+ITelemetry::Sample
 parse_airdata(const std::vector<std::string>& tokens) {
   return {
-    .type = Telemetry::AIRDATA,
-    .sequence = atoi(tokens[1].c_str()),
+    .type = ITelemetry::AIRDATA,
+    .sequence = (unsigned long) atoi(tokens[1].c_str()),
     .airdata = {
         .alpha = atof(tokens[2].c_str()),
         .beta = atof(tokens[3].c_str()),
@@ -33,8 +33,8 @@ parse_airdata(const std::vector<std::string>& tokens) {
   };
 }
 
-Telemetry::Sample
-Telemetry::parse(const std::string& message) {
+ITelemetry::Sample
+ITelemetry::parse(const std::string& message) {
   auto tokens = split_comma(message);
   if (tokens[0] == "$AR") {
     return parse_airdata(tokens);

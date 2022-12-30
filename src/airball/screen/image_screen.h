@@ -20,18 +20,7 @@ public:
    */
   ImageScreen(int w, int h);
 
-  virtual ~ImageScreen();
-
-  virtual cairo_t* cr() const { return cr_; }
-
-  virtual cairo_surface_t* cs() const { return cs_; }
-
-  void write_to_png(std::string file_name) const;
-
-private:
-
-  cairo_t *cr_;
-  cairo_surface_t *cs_;
+  void flush() override;
 };
 
 }  // namespace airball

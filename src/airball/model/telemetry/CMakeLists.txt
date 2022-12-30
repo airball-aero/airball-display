@@ -1,6 +1,8 @@
 add_library(telemetry
-        telemetry.cpp
-        udp_packet_reader.cpp)
+        ITelemetry.cpp
+        UdpTelemetry.cpp
+        FakeTelemetry.cpp
+        UdpPacketReader.cpp)
 target_link_libraries(telemetry
         Threads::Threads
         boost_system)
