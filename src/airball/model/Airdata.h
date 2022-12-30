@@ -5,7 +5,7 @@
 #include "../../framework/Application.h"
 #include "../model/IAirdata.h"
 #include "telemetry/ITelemetry.h"
-#include "../util/cubic_rate_filter.h"
+#include "../util/LinearRateFilter.h"
 #include "ISettings.h"
 #include "IAirballModel.h"
 
@@ -51,7 +51,7 @@ private:
   Ball smooth_ball_;
   std::vector<Ball> raw_balls_;
 
-  cubic_rate_filter climb_rate_filter_;
+  LinearRateFilter climb_rate_filter_;
   double climb_rate_;
 
   double altitude_;

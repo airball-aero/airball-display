@@ -49,6 +49,12 @@ smooth(double current_value, double new_value, double smoothing_factor) {
          ((1.0 - smoothing_factor) * current_value);
 }
 
+static int computeClimbRateFilterSize(double vsi_smoothing_factor) {
+  return (int) (kClimbRateFilterSizeMin +
+         vsi_smoothing_factor *
+         (kClimbRateFilterSizeMax - kClimbRateFilterSizeMin));
+}
+
 void Airdata::update(const ITelemetry::Sample d) {
   update(
       degrees_to_radians(d.airdata.alpha),
@@ -94,12 +100,13 @@ void Airdata::update(
 
   pressure_altitude_ = pressure_to_altitude(t, p, QNH_STANDARD);
 
-  climb_rate_filter_.set_size(
-      kClimbRateFilterSizeMin +
-      (int) (vsi_smoothing_factor *
-             (kClimbRateFilterSizeMax - kClimbRateFilterSizeMin)));
+  int climbRateFilterSize = computeClimbRateFilterSize(vsi_smoothing_factor);
+  if (climbRateFilterSize != climb_rate_filter_.size()) {
+    climb_rate_filter_ = LinearRateFilter(climbRateFilterSize);
+  }
+
   climb_rate_filter_.put(pressure_altitude_);
-  climb_rate_ = climb_rate_filter_.get_rate() / (1.0 / kSamplesPerSecond);
+  climb_rate_ = climb_rate_filter_.rate() / (1.0 / kSamplesPerSecond);
 
   altitude_ = pressure_to_altitude(t, p, qnh);
 
