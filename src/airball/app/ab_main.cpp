@@ -15,16 +15,20 @@
 #include "../screen/image_screen.h"
 
 const std::string kScreenX11 = "x11";
-const std::string kScreenSt7789vi = "st7789vi";
 const std::string kScreenImage = "image";
-DEFINE_string(screen, kScreenX11, "Screen implementation (x11, image,st7789vi)");
+#ifdef AIRBALL_BCM2835
+const std::string kScreenSt7789vi = "st7789vi";
+DEFINE_string(screen, kScreenX11, "Screen implementation (x11, image, st7789vi)");
+#else
+DEFINE_string(screen, kScreenX11, "Screen implementation (x11, image)");
+#endif
 
 const std::string kTelemetryUdp = "udp";
 const std::string kTelemetryLog = "log";
 const std::string kTelemetryFake = "fake";
 DEFINE_string(telemetry, kTelemetryFake, "Telemetry (udp, log, fake)");
-DEFINE_uint32(telemetry_udp_port, 30123, "Listening port for UDP line reader");
-DEFINE_string(telemetry_log_path, "airball.log", "File path for log line reader");
+DEFINE_uint32(telemetry_udp_port, 30123, "Listening port for UDP telemetry");
+DEFINE_string(telemetry_log_path, "airball.log", "File path for log telemetry");
 
 DEFINE_string(settings_path, "airball-settings.json", "Path to settings file");
 
@@ -52,7 +56,7 @@ std::unique_ptr<IScreen> buildScreen() {
   if (FLAGS_screen == kScreenImage) {
     return std::make_unique<ImageScreen>(400, 300);
   }
-  #ifdef AIRBALL_BCM2835
+#ifdef AIRBALL_BCM2835
   if (FLAGS_screen = kScreenSt7789vi) {
     return new St7789viScreen(400, 300);
   }
