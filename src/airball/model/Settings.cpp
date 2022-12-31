@@ -3,6 +3,12 @@
 #include <rapidjson/document.h>
 #include <fstream>
 #include <sstream>
+#include <fcntl.h>
+#include <csignal>
+
+#include <linux/input.h>
+#include <linux/input-event-codes.h>
+#include <iostream>
 
 #include "../util/file_write_watch.h"
 
@@ -179,23 +185,72 @@ const Parameter<bool> ROTATE_SCREEN = {
     .initial=false,
 };
 
-Settings::Settings(const std::string& path, IEventQueue *eventQueue)
-    : path_(path), eventQueue_(eventQueue) {
+const auto kInputDelay = std::chrono::milliseconds(100);
+
+Settings::Settings(const std::string& settingsFilePath,
+                   const std::string& inputDevicePath,
+                   IEventQueue *eventQueue)
+    : path_(settingsFilePath), inputDevicePath_(inputDevicePath), eventQueue_(eventQueue) {
   load();
   fileWatchThread_ = std::thread([&]() {
     file_write_watch w(path_);
     while (true) {
       w.next_event();
-      eventQueue->enqueue([&](){
-        load();
-      });
+      eventQueue->enqueue([&](){ load(); });
     }
   });
+  if (!inputDevicePath_.empty()) {
+    inputThread_ = std::thread([this]() {
+      while (true) {
+        int f = open(inputDevicePath_.c_str(), O_RDONLY);
+        if (f < 0) {
+          std::this_thread::sleep_for(kInputDelay);
+          continue;
+        }
+        input_event e = {0};
+        while (read(f, &e, sizeof(e)) == sizeof(e)) {
+          switch (e.type) {
+            case EV_KEY:
+              switch (e.code) {
+                case KEY_VOLUMEUP:
+                  if (e.value == 0) {
+                    eventQueue_->enqueue([this]() { hidIncrement(); });
+                  }
+                  break;
+                case KEY_VOLUMEDOWN:
+                  if (e.value == 0) {
+                    eventQueue_->enqueue([this]() { hidDecrement(); });
+                  }
+                  break;
+                case KEY_PLAYPAUSE:
+                  switch (e.value) {
+                    case 0:
+                      eventQueue_->enqueue([this]() { hidAdjustReleased(); });
+                      break;
+                    case 1:
+                      eventQueue_->enqueue([this]() { hidAdjustPressed(); });
+                      break;
+                    default:
+                      break;
+                  }
+                  break;
+                default:
+                  break;
+              }
+            default:
+              break;
+          }
+        }
+        close(f);
+      }
+    });
+  }
 }
 
 Settings::~Settings() {
   // TODO: Not correct
   fileWatchThread_.join();
+  inputThread_.join();
 }
 
 void Settings::load_str(std::string str) {
@@ -323,6 +378,22 @@ std::string Settings::speed_units() const {
 
 bool Settings::rotate_screen() const {
   return get_value(&ROTATE_SCREEN);
+}
+
+void Settings::hidIncrement() {
+  std::cout << "hidIncrement" << std::endl;
+}
+
+void Settings::hidDecrement() {
+  std::cout << "hidDecrement" << std::endl;
+}
+
+void Settings::hidAdjustPressed() {
+  std::cout << "hidAdjustPressed" << std::endl;
+}
+
+void Settings::hidAdjustReleased() {
+  std::cout << "hidAdjustReleased" << std::endl;
 }
 
 } // namespace airball

@@ -13,7 +13,9 @@ template <class T> class Parameter;
 
 class Settings : public ISettings {
 public:
-  Settings(const std::string& path, IEventQueue *eventQueue);
+  Settings(const std::string& settingsFilePath,
+           const std::string& inputDevicePath,
+           IEventQueue *eventQueue);
   virtual ~Settings();
 
   double v_full_scale() const override;
@@ -45,7 +47,13 @@ public:
   bool rotate_screen() const override;
 
 private:
+  void hidIncrement();
+  void hidDecrement();
+  void hidAdjustPressed();
+  void hidAdjustReleased();
+
   std::string path_;
+  std::string inputDevicePath_;
 
   void load();
   void load_str(std::string);
@@ -55,6 +63,7 @@ private:
   IEventQueue* eventQueue_;
   rapidjson::Document document_;
   std::thread fileWatchThread_;
+  std::thread inputThread_;
 };
 
 } // namespace airball

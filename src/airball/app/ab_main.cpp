@@ -30,7 +30,9 @@ DEFINE_string(telemetry, kTelemetryFake, "Telemetry (udp, log, fake)");
 DEFINE_uint32(telemetry_udp_port, 30123, "Listening port for UDP telemetry");
 DEFINE_string(telemetry_log_path, "airball.log", "File path for log telemetry");
 
-DEFINE_string(settings_path, "airball-settings.json", "Path to settings file");
+DEFINE_string(settings_file_path, "airball-settings.json", "Path to settings file");
+
+DEFINE_string(settings_input_device_path, "", "Path to settings adjustment /dev/input device");
 
 const auto kFrameInterval = std::chrono::milliseconds(50);
 
@@ -88,7 +90,8 @@ protected:
   void initialize() override {
     setFrameInterval(kFrameInterval);
     auto settings = std::make_unique<Settings>(
-        FLAGS_settings_path,
+        FLAGS_settings_file_path,
+        FLAGS_settings_input_device_path,
         eventQueue());
     setScreen(buildScreen(settings.get()));
     setModel(std::make_unique<AirballModel>(
