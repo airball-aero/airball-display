@@ -75,6 +75,7 @@ private:
       Point bottom_right);
   void paintNoFlightData();
   void paintUnitsAnnotation();
+  void paintAdjusting();
 
   double alpha_to_y(const double alpha);
   double beta_to_x(const double beta);
@@ -398,6 +399,7 @@ void PaintCycle::paint() {
   paintTotemPole();
   paintCowCatcher();
   paintUnitsAnnotation();
+  paintAdjusting();
 
   cairo_restore(screen_->cr());
 
@@ -1164,6 +1166,34 @@ void PaintCycle::paintUnitsAnnotation() {
       buf.str(),
       Point(statusRegionMargin_, statusRegionMargin_),
       TextReferencePoint ::TOP_LEFT,
+      statusTextFont_,
+      statusTextColor_);
+}
+
+void PaintCycle::paintAdjusting() {
+  if (model_.settings()->adjustment() == ISettings::ADJUSTMENT_NONE) {
+    return;
+  }
+  std::stringstream buf;
+  buf << "ADJ: ";
+  switch (model_.settings()->adjustment()) {
+    case ISettings::ADJUSTMENT_AUDIO_VOLUME:
+      buf << "VOL";
+      break;
+    case ISettings::ADJUSTMENT_BARO_SETTING:
+      buf << "BARO";
+      break;
+    case ISettings::ADJUSTMENT_SCREEN_BRIGHTNESS:
+      buf << "BRT";
+      break;
+    default:
+      return;
+  }
+  draw_text(
+      screen_->cr(),
+      buf.str(),
+      Point(width_ - statusRegionMargin_, statusRegionMargin_),
+      TextReferencePoint ::TOP_RIGHT,
       statusTextFont_,
       statusTextColor_);
 }

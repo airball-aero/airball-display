@@ -29,7 +29,14 @@ public:
     return initial;
   }
 
+  void set(rapidjson::Document& doc, T value) const {
+    if (doc.HasMember(name.c_str())) {
+      set_impl(doc, value);
+    }
+  }
+
   T get_impl(const rapidjson::Document &doc) const;
+  void set_impl(rapidjson::Document &doc, const T& value) const;
 };
 
 template<>
@@ -50,6 +57,26 @@ bool Parameter<bool>::get_impl(const rapidjson::Document &doc) const {
 template<>
 std::string Parameter<std::string>::get_impl(const rapidjson::Document &doc) const {
   return doc[name.c_str()].GetString();
+}
+
+template<>
+void Parameter<int>::set_impl(rapidjson::Document &doc, const int& value) const {
+  doc[name.c_str()].Set(value);
+}
+
+template<>
+void Parameter<double>::set_impl(rapidjson::Document &doc, const double& value) const {
+  doc[name.c_str()].Set(value);
+}
+
+template<>
+void Parameter<bool>::set_impl(rapidjson::Document &doc, const bool& value) const {
+  doc[name.c_str()].Set(value);
+}
+
+template<>
+void Parameter<std::string>::set_impl(rapidjson::Document &doc, const std::string& value) const {
+  doc[name.c_str()].Set(value.c_str());
 }
 
 const Parameter<double> V_FULL_SCALE = {
@@ -292,7 +319,9 @@ private:
 Settings::Settings(const std::string& settingsFilePath,
                    const std::string& inputDevicePath,
                    IEventQueue *eventQueue)
-    : path_(settingsFilePath), eventQueue_(eventQueue) {
+    : path_(settingsFilePath),
+      eventQueue_(eventQueue),
+      adjustment_(ADJUSTMENT_NONE){
   settingsEventSource_.reset(
       new SettingsEventSource(
           settingsFilePath,
@@ -436,27 +465,76 @@ double Settings::screen_brightness() const {
 }
 
 Settings::Adjustment Settings::adjustment() const {
-  return ADJUSTMENT_NONE;
+  return adjustment_;
+}
+
+void Settings::startAdjusting() {
+  if (adjustment_ == ADJUSTMENT_NONE) {
+    if (show_altimeter()) {
+      adjustment_ = ADJUSTMENT_BARO_SETTING;
+    } else {
+      adjustment_ = ADJUSTMENT_SCREEN_BRIGHTNESS;
+    }
+  }
+}
+
+void Settings::nextAdjustment() {
+  if (adjustment_ == ADJUSTMENT_NONE) {
+    startAdjusting();
+    return;
+  }
+  switch (adjustment_) {
+    case ISettings::ADJUSTMENT_BARO_SETTING:
+      adjustment_ = ADJUSTMENT_SCREEN_BRIGHTNESS;
+      break;
+    case ISettings::ADJUSTMENT_SCREEN_BRIGHTNESS:
+      adjustment_ = ADJUSTMENT_AUDIO_VOLUME;
+      break;
+    case ISettings::ADJUSTMENT_AUDIO_VOLUME:
+    default:
+      adjustment_ = ADJUSTMENT_NONE;
+      break;
+  }
 }
 
 void Settings::hidIncrement() {
-  std::cout << "hidIncrement" << std::endl;
+  startAdjusting();
+  switch (adjustment_) {
+    case ISettings::ADJUSTMENT_BARO_SETTING:
+      BARO_SETTING.set(document_, BARO_SETTING.get(document_) + 0.01);
+      break;
+    case ISettings::ADJUSTMENT_SCREEN_BRIGHTNESS:
+      SCREEN_BRIGHTNESS.set(document_, std::min(SCREEN_BRIGHTNESS.get(document_) + 0.1, 1.0));
+      break;
+    case ISettings::ADJUSTMENT_AUDIO_VOLUME:
+      AUDIO_VOLUME.set(document_, std::min(AUDIO_VOLUME.get(document_) + 0.1, 1.0));
+      break;
+  }
 }
 
 void Settings::hidDecrement() {
-  std::cout << "hidDecrement" << std::endl;
+  startAdjusting();
+  switch (adjustment_) {
+    case ISettings::ADJUSTMENT_BARO_SETTING:
+      BARO_SETTING.set(document_, BARO_SETTING.get(document_) - 0.01);
+      break;
+    case ISettings::ADJUSTMENT_SCREEN_BRIGHTNESS:
+      SCREEN_BRIGHTNESS.set(document_, std::max(SCREEN_BRIGHTNESS.get(document_) - 0.1, 0.0));
+      break;
+    case ISettings::ADJUSTMENT_AUDIO_VOLUME:
+      AUDIO_VOLUME.set(document_, std::max(AUDIO_VOLUME.get(document_) - 0.1, 0.0));
+      break;
+  }
 }
 
 void Settings::hidAdjustPressed() {
-  std::cout << "hidAdjustPressed" << std::endl;
+  nextAdjustment();
 }
 
-void Settings::hidAdjustReleased() {
-  std::cout << "hidAdjustReleased" << std::endl;
-}
+void Settings::hidAdjustReleased() {}
 
 void Settings::hidTimerExpired() {
-  std::cout << "hidTimerExpired" << std::endl;
+  adjustment_ = ADJUSTMENT_NONE;
 }
 
 } // namespace airball

@@ -60,6 +60,9 @@ public:
   void load();
 
 private:
+  void startAdjusting();
+  void nextAdjustment();
+
   std::string path_;
   std::unique_ptr<SettingsEventSource> settingsEventSource_;
 
@@ -69,6 +72,8 @@ private:
 
   IEventQueue* eventQueue_;
   rapidjson::Document document_;
+
+  Adjustment adjustment_;
 };
 
 } // namespace airball

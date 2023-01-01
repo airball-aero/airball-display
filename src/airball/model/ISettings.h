@@ -173,6 +173,7 @@ public:
      ADJUSTMENT_SOUND_SCHEME = 22,
      ADJUSTMENT_AUDIO_VOLUME = 23,
      ADJUSTMENT_SPEED_UNITS = 24,
+     ADJUSTMENT_SCREEN_BRIGHTNESS = 25,
    };
 
   virtual Adjustment adjustment() const = 0;
