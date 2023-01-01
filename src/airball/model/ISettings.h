@@ -140,7 +140,42 @@ public:
   /**
    * @return whether the material displayed on the screen should be rotated 90 degrees.
    */
-   virtual bool rotate_screen() const = 0;
+  virtual bool rotate_screen() const = 0;
+
+  /**
+   * @return the desired sreen brightness, from 0.0 (full dark) to 1.0 (full bright).
+   */
+  virtual double screen_brightness () const = 0;
+
+   enum Adjustment {
+     ADJUSTMENT_NONE = 0,
+     ADJUSTMENT_V_FULL_SCAlE = 1,
+     ADJUSTMENT_V_R = 2,
+     ADJUSTMENT_V_FE = 3,
+     ADJUSTMENT_V_NO = 4,
+     ADJUSTMENT_V_NE = 5,
+     ADJUSTMENT_ALPHA_STALL = 6,
+     ADJUSTMENT_ALPHA_STALL_WARNING = 7,
+     ADJUSTMENT_ALPHA_MIN = 8,
+     ADJUSTMENT_ALPHA_MAX = 9,
+     ADJUSTMENT_ALPHA_X = 10,
+     ADJUSTMENT_ALPHA_Y = 11,
+     ADJUSTMENT_ALPHA_REF = 12,
+     ADJUSTMENT_BETA_FULL_SCALE = 13,
+     ADJUSTMENT_BETA_BIAS = 14,
+     ADJUSTMENT_BARO_SETTING = 15,
+     ADJUSTMENT_BALL_SMOOTHING_FACTOR = 16,
+     ADJUSTMENT_VSI_SMOOTHING_FACTOR = 17,
+     ADJUSTMENT_SHOW_ALTIMETER = 18,
+     ADJUSTMENT_SHOW_LINK_STATUS = 19,
+     ADJUSTMENT_SHOW_PROBE_BATTERY_STATUS = 20,
+     ADJUSTMENT_DECLUTTER = 21,
+     ADJUSTMENT_SOUND_SCHEME = 22,
+     ADJUSTMENT_AUDIO_VOLUME = 23,
+     ADJUSTMENT_SPEED_UNITS = 24,
+   };
+
+  virtual Adjustment adjustment() const = 0;
 };
 
 } // namespace airball

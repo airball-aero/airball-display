@@ -9,19 +9,21 @@
 #include <linux/input.h>
 #include <linux/input-event-codes.h>
 #include <iostream>
+#include <mutex>
 
 #include "../util/file_write_watch.h"
+#include "../util/one_shot_timer.h"
 
 namespace airball {
 
 template<class T>
 class Parameter {
 public:
-  const char *name;
+  const std::string name;
   const T initial;
 
   T get(const rapidjson::Document &doc) const {
-    if (doc.HasMember(name)) {
+    if (doc.HasMember(name.c_str())) {
       return get_impl(doc);
     }
     return initial;
@@ -32,135 +34,135 @@ public:
 
 template<>
 int Parameter<int>::get_impl(const rapidjson::Document &doc) const {
-  return doc[name].GetInt();
+  return doc[name.c_str()].GetInt();
 }
 
 template<>
 double Parameter<double>::get_impl(const rapidjson::Document &doc) const {
-  return doc[name].GetDouble();
+  return doc[name.c_str()].GetDouble();
 }
 
 template<>
 bool Parameter<bool>::get_impl(const rapidjson::Document &doc) const {
-  return doc[name].GetBool();
+  return doc[name.c_str()].GetBool();
 }
 
 template<>
 std::string Parameter<std::string>::get_impl(const rapidjson::Document &doc) const {
-  return doc[name].GetString();
+  return doc[name.c_str()].GetString();
 }
 
-constexpr Parameter<double> V_FULL_SCALE = {
+const Parameter<double> V_FULL_SCALE = {
     .name="ias_full_scale",
     .initial=100,
 };
 
-constexpr Parameter<double> V_R = {
+const Parameter<double> V_R = {
     .name="v_r",
     .initial=100,
 };
 
-constexpr Parameter<double> V_FE = {
+const Parameter<double> V_FE = {
     .name="v_fe",
     .initial=100,
 };
 
-constexpr Parameter<double> V_NO = {
+const Parameter<double> V_NO = {
     .name="v_no",
     .initial=100,
 };
 
-constexpr Parameter<double> V_NE = {
+const Parameter<double> V_NE = {
     .name="v_ne",
     .initial=100,
 };
 
-constexpr Parameter<double> ALPHA_STALL = {
+const Parameter<double> ALPHA_STALL = {
     .name="alpha_stall",
     .initial=15.0,
-    };
+};
 
-constexpr Parameter<double> ALPHA_STALL_WARNING = {
+const Parameter<double> ALPHA_STALL_WARNING = {
     .name="alpha_stall_warning",
     .initial=14.0,
-    };
+};
 
-constexpr Parameter<double> ALPHA_MIN = {
+const Parameter<double> ALPHA_MIN = {
     .name="alpha_min",
     .initial=0.0,
 };
 
-constexpr Parameter<double> ALPHA_MAX = {
+const Parameter<double> ALPHA_MAX = {
     .name="alpha_max",
     .initial=20.0,
 };
 
-constexpr Parameter<double> ALPHA_X = {
+const Parameter<double> ALPHA_X = {
     .name="alpha_x",
     .initial=12.0,
 };
 
-constexpr Parameter<double> ALPHA_Y = {
+const Parameter<double> ALPHA_Y = {
     .name="alpha_y",
     .initial=10.0,
 };
 
-constexpr Parameter<double> ALPHA_REF = {
+const Parameter<double> ALPHA_REF = {
     .name="alpha_ref",
     .initial=14.0,
 };
 
-constexpr Parameter<double> BETA_FULL_SCALE = {
+const Parameter<double> BETA_FULL_SCALE = {
     .name="beta_full_scale",
     .initial=20.0,
 };
 
-constexpr Parameter<double> BETA_BIAS = {
+const Parameter<double> BETA_BIAS = {
     .name="beta_bias",
     .initial=0.0,
 };
 
-constexpr Parameter<double> BARO_SETTING = {
+const Parameter<double> BARO_SETTING = {
     .name="baro_setting",
     .initial=29.92,
 };
 
-constexpr Parameter<double> BALL_SMOOTHING_FACTOR = {
+const Parameter<double> BALL_SMOOTHING_FACTOR = {
     .name="ball_smoothing_factor",
     .initial=1.0,
 };
 
-constexpr Parameter<double> VSI_SMOOTHING_FACTOR = {
+const Parameter<double> VSI_SMOOTHING_FACTOR = {
     .name="vsi_smoothing_factor",
     .initial=1.0,
 };
 
-constexpr Parameter<int> SCREEN_WIDTH = {
+const Parameter<int> SCREEN_WIDTH = {
     .name="screen_width",
     .initial=272,
 };
 
-constexpr Parameter<int> SCREEN_HEIGHT = {
+const Parameter<int> SCREEN_HEIGHT = {
     .name="screen_height",
     .initial=480,
 };
 
-constexpr Parameter<bool> SHOW_ALTIMETER = {
+const Parameter<bool> SHOW_ALTIMETER = {
     .name="show_altimeter",
     .initial=true,
 };
 
-constexpr Parameter<bool> SHOW_LINK_STATUS = {
+const Parameter<bool> SHOW_LINK_STATUS = {
     .name="show_link_status",
     .initial=true,
 };
 
-constexpr Parameter<bool> SHOW_PROBE_BATTERY_STATUS = {
+const Parameter<bool> SHOW_PROBE_BATTERY_STATUS = {
     .name="show_probe_battery_status",
     .initial=true,
 };
 
-constexpr Parameter<bool> DECLUTTER = {
+const Parameter<bool> DECLUTTER = {
     .name="declutter",
     .initial=false,
 };
@@ -185,75 +187,124 @@ const Parameter<bool> ROTATE_SCREEN = {
     .initial=false,
 };
 
-const auto kInputDelay = std::chrono::milliseconds(100);
+const Parameter<double> SCREEN_BRIGHTNESS = {
+    .name="screen_brightness",
+    .initial=1.0,
+};
+
+const auto kInputDelay = std::chrono::milliseconds(5000);
+
+// A SettingsEventSource handles all the asynchronous operations to listen for HID
+// events from input devices, timeouts, and all that stuff. It is responsible for
+// notifying the Settings object when stuff happens, on the UI event loop so that
+// the Settings code can stop worrying and just focus on its main job.
+class SettingsEventSource {
+public:
+  SettingsEventSource(const std::string& settingsFilePath,
+                      const std::string& inputDevicePath,
+                      IEventQueue* eventQueue,
+                      Settings* settings)
+      : settingsFilePath_(settingsFilePath),
+        inputDevicePath_(inputDevicePath),
+        eventQueue_(eventQueue),
+        settings_(settings) {
+    fileWatchThread_ = std::thread([this]() {
+      file_write_watch w(settingsFilePath_);
+      while (true) {
+        w.next_event();
+        eventQueue_->enqueue([&](){ settings_->load(); });
+      }
+    });
+    if (!inputDevicePath_.empty()) {
+      inputThread_ = std::thread([this]() {
+        while (true) {
+          int f = open(inputDevicePath_.c_str(), O_RDONLY);
+          if (f < 0) {
+            std::this_thread::sleep_for(kInputDelay);
+            continue;
+          }
+          input_event e = {0};
+          while (read(f, &e, sizeof(e)) == sizeof(e)) {
+            switch (e.type) {
+              case EV_KEY:
+                switch (e.code) {
+                  case KEY_VOLUMEUP:
+                    if (e.value == 0) {
+                      eventQueue_->enqueue([this]() { settings_->hidIncrement(); });
+                      restartCancelTimer();
+                    }
+                    break;
+                  case KEY_VOLUMEDOWN:
+                    if (e.value == 0) {
+                      eventQueue_->enqueue([this]() { settings_->hidDecrement(); });
+                      restartCancelTimer();
+                    }
+                    break;
+                  case KEY_PLAYPAUSE:
+                    switch (e.value) {
+                      case 0:
+                        eventQueue_->enqueue([this]() { settings_->hidAdjustReleased(); });
+                        restartCancelTimer();
+                        break;
+                      case 1:
+                        eventQueue_->enqueue([this]() { settings_->hidAdjustPressed(); });
+                        restartCancelTimer();
+                        break;
+                      default:
+                        break;
+                    }
+                    break;
+                  default:
+                    break;
+                }
+              default:
+                break;
+            }
+          }
+          close(f);
+        }
+      });
+    }
+  }
+
+  void restartCancelTimer() {
+    std::lock_guard<std::mutex> lock(cancelTimerMu_);
+    cancelTimer_.reset(new OneShotTimer(kInputDelay, [this]() {
+      eventQueue_->enqueue([this]() {
+        settings_->hidTimerExpired();
+      });
+    }));
+  }
+
+private:
+  const std::string settingsFilePath_;
+  const std::string inputDevicePath_;
+  IEventQueue* eventQueue_;
+  Settings* settings_;
+
+  std::thread fileWatchThread_;
+  std::thread inputThread_;
+
+  std::mutex cancelTimerMu_;
+  std::unique_ptr<OneShotTimer> cancelTimer_;
+};
 
 Settings::Settings(const std::string& settingsFilePath,
                    const std::string& inputDevicePath,
                    IEventQueue *eventQueue)
-    : path_(settingsFilePath), inputDevicePath_(inputDevicePath), eventQueue_(eventQueue) {
+    : path_(settingsFilePath), eventQueue_(eventQueue) {
+  settingsEventSource_.reset(
+      new SettingsEventSource(
+          settingsFilePath,
+          inputDevicePath,
+          eventQueue,
+          this));
   load();
-  fileWatchThread_ = std::thread([&]() {
-    file_write_watch w(path_);
-    while (true) {
-      w.next_event();
-      eventQueue->enqueue([&](){ load(); });
-    }
-  });
-  if (!inputDevicePath_.empty()) {
-    inputThread_ = std::thread([this]() {
-      while (true) {
-        int f = open(inputDevicePath_.c_str(), O_RDONLY);
-        if (f < 0) {
-          std::this_thread::sleep_for(kInputDelay);
-          continue;
-        }
-        input_event e = {0};
-        while (read(f, &e, sizeof(e)) == sizeof(e)) {
-          switch (e.type) {
-            case EV_KEY:
-              switch (e.code) {
-                case KEY_VOLUMEUP:
-                  if (e.value == 0) {
-                    eventQueue_->enqueue([this]() { hidIncrement(); });
-                  }
-                  break;
-                case KEY_VOLUMEDOWN:
-                  if (e.value == 0) {
-                    eventQueue_->enqueue([this]() { hidDecrement(); });
-                  }
-                  break;
-                case KEY_PLAYPAUSE:
-                  switch (e.value) {
-                    case 0:
-                      eventQueue_->enqueue([this]() { hidAdjustReleased(); });
-                      break;
-                    case 1:
-                      eventQueue_->enqueue([this]() { hidAdjustPressed(); });
-                      break;
-                    default:
-                      break;
-                  }
-                  break;
-                default:
-                  break;
-              }
-            default:
-              break;
-          }
-        }
-        close(f);
-      }
-    });
-  }
 }
 
-Settings::~Settings() {
-  // TODO: Not correct
-  fileWatchThread_.join();
-  inputThread_.join();
-}
+Settings::~Settings() {}
 
-void Settings::load_str(std::string str) {
+void Settings::load_str(const std::string& str) {
   document_.Parse("{}");
   document_.Parse(str.c_str());
 }
@@ -380,6 +431,14 @@ bool Settings::rotate_screen() const {
   return get_value(&ROTATE_SCREEN);
 }
 
+double Settings::screen_brightness() const {
+  return get_value(&SCREEN_BRIGHTNESS);
+}
+
+Settings::Adjustment Settings::adjustment() const {
+  return ADJUSTMENT_NONE;
+}
+
 void Settings::hidIncrement() {
   std::cout << "hidIncrement" << std::endl;
 }
@@ -394,6 +453,10 @@ void Settings::hidAdjustPressed() {
 
 void Settings::hidAdjustReleased() {
   std::cout << "hidAdjustReleased" << std::endl;
+}
+
+void Settings::hidTimerExpired() {
+  std::cout << "hidTimerExpired" << std::endl;
 }
 
 } // namespace airball

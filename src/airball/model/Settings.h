@@ -11,6 +11,8 @@ namespace airball {
 
 template <class T> class Parameter;
 
+class SettingsEventSource;
+
 class Settings : public ISettings {
 public:
   Settings(const std::string& settingsFilePath,
@@ -45,25 +47,28 @@ public:
   double audio_volume() const override;
   std::string speed_units() const override;
   bool rotate_screen() const override;
+  double screen_brightness() const override;
 
-private:
+  Adjustment adjustment() const override;
+
   void hidIncrement();
   void hidDecrement();
   void hidAdjustPressed();
   void hidAdjustReleased();
-
-  std::string path_;
-  std::string inputDevicePath_;
+  void hidTimerExpired();
 
   void load();
-  void load_str(std::string);
+
+private:
+  std::string path_;
+  std::unique_ptr<SettingsEventSource> settingsEventSource_;
+
+  void load_str(const std::string& s);
 
   template <class T> T get_value(const Parameter<T>* p) const;
 
   IEventQueue* eventQueue_;
   rapidjson::Document document_;
-  std::thread fileWatchThread_;
-  std::thread inputThread_;
 };
 
 } // namespace airball
