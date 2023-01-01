@@ -17,7 +17,7 @@ namespace airball {
 template <typename Model>
 class Application {
 public:
-  explicit Application()
+  Application()
       : running_(true) {
     eventQueue_.reset(new EventQueueImpl(&eventsMu_, &events_));
   }
@@ -33,12 +33,13 @@ public:
     initialize();
     while (running()) {
       auto start = std::chrono::steady_clock::now();
+      std::vector<std::function<void()>> currentEvents;
       {
         std::lock_guard<std::mutex> lock(eventsMu_);
-        for (const auto & event : events_) {
-          event();
-        }
-        events_.clear();
+        currentEvents = std::move(events_);
+      }
+      for (const auto & event : currentEvents) {
+        event();
       }
       view_->paint(*model_, screen_.get());
       screen_->flush();
