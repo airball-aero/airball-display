@@ -58,6 +58,7 @@ public:
   void hidTimerExpired();
 
   void load();
+  void save();
 
 private:
   void startAdjusting();
@@ -67,6 +68,7 @@ private:
   std::unique_ptr<SettingsEventSource> settingsEventSource_;
 
   void load_str(const std::string& s);
+  void save_str(const std::string& s);
 
   template <class T> T get_value(const Parameter<T>* p) const;
 

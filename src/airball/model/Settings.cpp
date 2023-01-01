@@ -13,6 +13,9 @@
 
 #include "../util/file_write_watch.h"
 #include "../util/one_shot_timer.h"
+#include "rapidjson/writer.h"
+#include "rapidjson/prettywriter.h"
+#include "rapidjson/filewritestream.h"
 
 namespace airball {
 
@@ -338,6 +341,14 @@ void Settings::load_str(const std::string& str) {
   document_.Parse(str.c_str());
 }
 
+void Settings::save_str(const std::string& str) {
+  std::ofstream f;
+  f.open(path_);
+  f << str;
+  f.flush();
+  f.close();
+}
+
 void Settings::load() {
   std::ifstream f;
   f.open(path_);
@@ -345,6 +356,13 @@ void Settings::load() {
   s << f.rdbuf();
   f.close();
   load_str(s.str());
+}
+
+void Settings::save() {
+  rapidjson::StringBuffer buffer;
+  rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+  document_.Accept(writer);
+  save_str(buffer.GetString());
 }
 
 template<class T>
@@ -509,7 +527,10 @@ void Settings::hidIncrement() {
     case ISettings::ADJUSTMENT_AUDIO_VOLUME:
       AUDIO_VOLUME.set(document_, std::min(AUDIO_VOLUME.get(document_) + 0.1, 1.0));
       break;
+    default:
+      return;
   }
+  save();
 }
 
 void Settings::hidDecrement() {
@@ -524,7 +545,10 @@ void Settings::hidDecrement() {
     case ISettings::ADJUSTMENT_AUDIO_VOLUME:
       AUDIO_VOLUME.set(document_, std::max(AUDIO_VOLUME.get(document_) - 0.1, 0.0));
       break;
+    default:
+      return;
   }
+  save();
 }
 
 void Settings::hidAdjustPressed() {
