@@ -1,37 +1,19 @@
 #ifndef AIRBALL_DISPLAY_SOUND_SCHEME_H
 #define AIRBALL_DISPLAY_SOUND_SCHEME_H
 
-#include <string>
-#include <vector>
-#include "../sound_mixer/sound_layer.h"
-#include "../sound_mixer/sound_mixer.h"
-#include "../model/ISettings.h"
-#include "../model/IAirdata.h"
+#include "../../framework/ISoundScheme.h"
+#include "../../framework/ISoundMixer.h"
+#include "../model/IAirballModel.h"
 
 namespace airball {
 
-class sound_scheme {
+class sound_scheme : public ISoundScheme<IAirballModel> {
 public:
-  explicit sound_scheme(std::string device_name,
-                        ISettings* settings,
-                        IAirdata *airdata);
-  virtual ~sound_scheme() = default;
-
-  bool start();
-
-  virtual void update() = 0;
-
-protected:
-  sound_mixer& mixer() { return mixer_; }
-
-  const ISettings& settings() { return *settings_; }
-
-  const IAirdata& airdata() { return *airdata_; }
-
+  void install(ISoundMixer* mixer) override;
+  void remove(ISoundMixer* mixer) override;
+  void update(const IAirballModel& model, ISoundMixer* mixer) override;
 private:
-  sound_mixer mixer_;
-  const ISettings* const settings_;
-  const IAirdata* const airdata_;
+  std::unique_ptr<ISoundScheme<IAirballModel>> soundScheme_;
 };
 
 } // namespace airball

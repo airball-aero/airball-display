@@ -10,13 +10,12 @@ namespace airball {
 
 class stallfence_scheme: public sound_scheme {
 public:
-  explicit stallfence_scheme(std::string device_name,
-                             ISettings* settings,
-                             IAirdata* airdata);
-  ~stallfence_scheme() override = default;
+  stallfence_scheme();
+  virtual ~stallfence_scheme() = default;
 
-protected:
-  void update() override;
+  void install(ISoundMixer* mixer) override;
+  void remove(ISoundMixer* mixer) override;
+  void update(const IAirballModel& model, ISoundMixer* mixer) override;
 
 private:
   sine_layer tone_;

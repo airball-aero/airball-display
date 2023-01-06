@@ -25,19 +25,21 @@ constexpr double kPwmFrequencyStallWarning = 20; // Hz
 
 constexpr double kAlphaRefToleranceFactor = 0.05;
 
-flyonspeed_scheme::flyonspeed_scheme(
-    std::string device_name,
-    ISettings *settings,
-    IAirdata *airdata)
-    : sound_scheme(device_name, settings, airdata),
-      tone_(1),
+flyonspeed_scheme::flyonspeed_scheme()
+    : tone_(1),
       pwm_(1, 1, 1),
-      balance_(1, 1, 1) {
-  mixer().set_layers({
-                         &tone_,
-                         &pwm_,
-                         &balance_,
-                     });
+      balance_(1, 1, 1) {}
+
+void flyonspeed_scheme::install(ISoundMixer* mixer) {
+  mixer->set_layers({
+                        &tone_,
+                        &pwm_,
+                        &balance_,
+                    });
+}
+
+void flyonspeed_scheme::remove(ISoundMixer* mixer) {
+  mixer->set_layers({});
 }
 
 enum speed_regime {
@@ -49,23 +51,23 @@ enum speed_regime {
 };
 
 speed_regime calculate_regime(
-    const ISettings& settings,
+    const ISettings* settings,
     const double alpha,
     const double beta) {
   const double alpha_ref_tolerance =
       kAlphaRefToleranceFactor *
-      (settings.alpha_stall() - settings.alpha_ref());
+      (settings->alpha_stall() - settings->alpha_ref());
 
-  if (alpha < settings.alpha_y()) {
+  if (alpha < settings->alpha_y()) {
     return CRUISE;
   }
-  if (alpha < settings.alpha_ref() - alpha_ref_tolerance) {
+  if (alpha < settings->alpha_ref() - alpha_ref_tolerance) {
     return FAST;
   }
-  if (alpha < settings.alpha_ref() + alpha_ref_tolerance) {
+  if (alpha < settings->alpha_ref() + alpha_ref_tolerance) {
     return ONSPEED;
   }
-  if (alpha < settings.alpha_stall_warning()) {
+  if (alpha < settings->alpha_stall_warning()) {
     return SLOW;
   }
   return STALL_WARNING;
@@ -78,12 +80,12 @@ double interpolate(
   return y0 + (x - x0) / (x1 - x0) * (y1 - y0);
 }
 
-void flyonspeed_scheme::update() {
-  const IAirdata::Ball ball = airdata().smooth_ball();
+void flyonspeed_scheme::update(const IAirballModel& model, ISoundMixer* mixer) {
+  const IAirdata::Ball ball = model.airdata()->smooth_ball();
   const double alpha = radians_to_degrees(ball.alpha());
   const double beta = radians_to_degrees(ball.beta());
 
-  const speed_regime regime = calculate_regime(settings(), alpha, beta);
+  const speed_regime regime = calculate_regime(model.settings(), alpha, beta);
 
   // Switch off feedback entirely if cruise; else proceed
   switch(regime) {
@@ -94,18 +96,18 @@ void flyonspeed_scheme::update() {
       break;
   }
 
-  snd_pcm_uframes_t ramp_period = mixer().seconds_to_frames(kPeriodRamp);
+  snd_pcm_uframes_t ramp_period = mixer->seconds_to_frames(kPeriodRamp);
 
   // Set stereo effect with baseline of (left, right) gains = (0.5, 0.5). Yaw
   // changes that from (1.0, 0.0) in one extreme to (0.0, 1.0) on the other.
   balance_.set_ramp_period(ramp_period);
   double beta_ratio =
-      (beta + settings().beta_bias()) /
-      settings().beta_full_scale();
+      (beta + model.settings()->beta_bias()) /
+      model.settings()->beta_full_scale();
   balance_.set_gains(
-      settings().audio_volume() *
+      model.settings()->audio_volume() *
       std::min(1.0, (-beta_ratio + 1.0) / 2.0),
-      settings().audio_volume() *
+      model.settings()->audio_volume() *
       std::min(1.0, (beta_ratio + 1.0) / 2.0));
 
   // Set tone frequency based on regime.
@@ -122,11 +124,11 @@ void flyonspeed_scheme::update() {
     default:
       return; // error
   }
-  tone_.set_period(mixer().frequency_to_period(tone_frequency));
+  tone_.set_period(mixer->frequency_to_period(tone_frequency));
 
   // Consider the case where the PWM is a constant tone first
   if (regime == ONSPEED) {
-    snd_pcm_uframes_t period = mixer().seconds_to_frames(kPeriodDefault);
+    snd_pcm_uframes_t period = mixer->seconds_to_frames(kPeriodDefault);
     pwm_.set_parameters(period, period, 0);
     return;
   }
@@ -137,13 +139,13 @@ void flyonspeed_scheme::update() {
     case FAST:
       pwm_frequency = interpolate(
           kPwmFrequencyFastLDMax, kPwmFrequencyFastOnspeed,
-          settings().alpha_y(), settings().alpha_ref(),
+          model.settings()->alpha_y(), model.settings()->alpha_ref(),
           alpha);
       break;
     case SLOW:
       pwm_frequency = interpolate(
           kPwmFrequencySlowOnspeed, kPwmFrequencySlowStallWarning,
-          settings().alpha_ref(), settings().alpha_stall_warning(),
+          model.settings()->alpha_ref(), model.settings()->alpha_stall_warning(),
           alpha);
       break;
     case STALL_WARNING:
@@ -153,7 +155,7 @@ void flyonspeed_scheme::update() {
       return; // error
   }
 
-  snd_pcm_uframes_t pwm_period = mixer().frequency_to_period(pwm_frequency);
+  snd_pcm_uframes_t pwm_period = mixer->frequency_to_period(pwm_frequency);
   snd_pcm_uframes_t pwm_on_period = pwm_period / 2;
   pwm_.set_parameters(pwm_period, pwm_on_period, ramp_period);
 }

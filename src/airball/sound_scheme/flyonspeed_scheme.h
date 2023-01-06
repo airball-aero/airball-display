@@ -10,13 +10,12 @@ namespace airball {
 
 class flyonspeed_scheme : public sound_scheme {
 public:
-  explicit flyonspeed_scheme(std::string device_name,
-                             ISettings* settings,
-                             IAirdata* airdata);
-  ~flyonspeed_scheme() override = default;
+  flyonspeed_scheme();
+  virtual ~flyonspeed_scheme() = default;
 
-protected:
-  void update() override;
+  void install(ISoundMixer* mixer) override;
+  void remove(ISoundMixer* mixer) override;
+  void update(const IAirballModel& m, ISoundMixer* mixer) override;
 
 private:
   sine_layer tone_;

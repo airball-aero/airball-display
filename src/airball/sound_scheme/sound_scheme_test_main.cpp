@@ -9,6 +9,7 @@
 #include "../model/ISettings.h"
 #include "../model/IAirdata.h"
 #include "../util/units.h"
+#include "../sound_mixer/sound_mixer.h"
 
 constexpr double kAlphaBetaStep = 0.01;
 constexpr int kDisplayHalfSize = 20;
@@ -39,6 +40,12 @@ public:
   bool show_probe_battery_status() const override { return false; }
   std::string sound_scheme() const override { return ""; }
   double audio_volume() const override { return 1.0; }
+  double alpha_max() const override { return 0; }
+  bool declutter() const override { return false; }
+  std::string speed_units() const override { return "knots"; }
+  bool rotate_screen() const override { return false; }
+  double screen_brightness() const override { return 0.0; }
+  Adjustment adjustment() const override { return ADJUSTMENT_NONE; }
 
   double v_full_scale_ = 0;
   double v_r_ = 0;
@@ -52,6 +59,18 @@ public:
   double alpha_y_ = 0;
   double alpha_ref_ = 0;
   double beta_full_scale_ = 0;
+};
+
+class TestModel : public airball::IAirballModel {
+public:
+  TestModel(const airball::ISettings* settings) : settings_(settings) {}
+
+  const airball::ISettings* settings() { return settings_; }
+
+  const airball::IAirdata* airdata() { return nullptr; }
+
+private:
+  const airball::ISettings* settings_;
 };
 
 class TestAirdata : public airball::IAirdata {
@@ -108,24 +127,20 @@ int main(int argc, char**argv) {
 
   std::string device_name(argv[1]);
   std::string scheme_name(argv[2]);
+
+  airball::sound_mixer mixer(device_name);
   std::unique_ptr<airball::sound_scheme> scheme;
 
   if (scheme_name == "flyonspeed") {
-    scheme.reset(new airball::flyonspeed_scheme(
-        device_name,
-        &settings,
-        &airdata));
+    scheme.reset(new airball::flyonspeed_scheme( ));
   } else if (scheme_name == "stallfence") {
-    scheme.reset(new airball::stallfence_scheme(
-        device_name,
-        &settings,
-        &airdata));
+    scheme.reset(new airball::stallfence_scheme());
   } else {
     std::cerr << "Unknown scheme: " << scheme_name << std::endl;
     return -1;
   }
 
-  if (!scheme->start()) {
+  if (!mixer.start()) {
     std::cout << "Error" << std::endl;
     return -1;
   }
@@ -137,7 +152,7 @@ int main(int argc, char**argv) {
         degrees_to_radians(beta),
         0.0,
         0.0));
-    scheme->update();
+    scheme->update(model);
     std::this_thread::sleep_for(std::chrono::duration<double, std::milli>(10));
   };
 

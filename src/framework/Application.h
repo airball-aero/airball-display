@@ -31,6 +31,7 @@ public:
 
   void run() {
     initialize();
+    soundScheme_->install(soundMixer_);
     while (running()) {
       auto start = std::chrono::steady_clock::now();
       std::vector<std::function<void()>> currentEvents;
@@ -41,12 +42,14 @@ public:
       for (const auto & event : currentEvents) {
         event();
       }
-      view_->paint(*model_, screen_.get());
+      view_->paint(*model_, screen_);
       screen_->flush();
+      soundScheme_->update(*model_, soundMixer_);
       std::this_thread::sleep_for(
           frameInterval_ -
           (std::chrono::steady_clock::now() - start));
     }
+    soundScheme_->remove(soundMixer_);
   }
 
   void stop() {
