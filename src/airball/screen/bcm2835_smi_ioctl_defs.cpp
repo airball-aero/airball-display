@@ -1,6 +1,6 @@
 #include "bcm2835_smi_ioctl_defs.h"
 
-#include <uapi/asm-generic/int-ll64.h>
+#include <asm-generic/int-ll64.h>
 #include <linux/broadcom/bcm2835_smi.h>
 
 namespace airball {

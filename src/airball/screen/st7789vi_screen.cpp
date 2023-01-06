@@ -11,6 +11,7 @@ constexpr uint32_t kHeight = 320;
   
 ST7789VIScreen::ST7789VIScreen() {
   w_.initialize();
+  w_.set_brightness(255);
   data_ = (unsigned char *) malloc(sizeof(uint16_t) * kWidth * kHeight);
   set_cs(cairo_image_surface_create_for_data(
       data_,

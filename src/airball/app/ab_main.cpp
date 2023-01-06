@@ -14,6 +14,10 @@
 #include "../view/AirballView.h"
 #include "../screen/image_screen.h"
 
+#ifdef AIRBALL_BCM2835
+#include "../screen/st7789vi_screen.h"
+#endif
+
 const std::string kScreenX11 = "x11";
 const std::string kScreenImage = "image";
 #ifdef AIRBALL_BCM2835
@@ -58,9 +62,9 @@ std::unique_ptr<IScreen> buildScreen(const ISettings* settings) {
   if (FLAGS_screen == kScreenImage) {
     return std::make_unique<ImageScreen>(settings->screen_width(), settings->screen_height());
   }
-#ifdef AIRBALL_BCM2835
-  if (FLAGS_screen = kScreenSt7789vi) {
-    return new St7789viScreen(400, 300);
+  #ifdef AIRBALL_BCM2835
+  if (FLAGS_screen == kScreenSt7789vi) {
+    return std::make_unique<ST7789VIScreen>();
   }
   #endif
   std::cerr << "Unsupported screen option " << FLAGS_screen << std::endl;

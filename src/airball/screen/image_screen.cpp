@@ -2,6 +2,7 @@
 
 #include <csignal>
 #include <stdio.h>
+#include <unistd.h>
 
 namespace airball {
 

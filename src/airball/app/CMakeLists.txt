@@ -11,6 +11,8 @@ target_link_libraries(ab
 
 if (AIRBALL_BCM2835)
 
-    target_link_libraries(ab
-            screen_bcm2835)
+  target_link_libraries(ab
+          screen_bcm2835)
+  add_compile_definitions(AIRBALL_BCM2835=1)
+
 endif()
