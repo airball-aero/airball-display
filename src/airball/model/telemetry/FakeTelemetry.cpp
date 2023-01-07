@@ -4,6 +4,8 @@
 #include <thread>
 #include <math.h>
 
+#include <iostream>
+
 namespace airball {
 
 const static auto kSendDelay = std::chrono::milliseconds(20);
@@ -44,13 +46,15 @@ double interpolate_value(double phase_ratio, const Model &m) {
   return m.min + factor * (m.max - m.min);
 }
 
-double compute_phase_ratio(const std::chrono::steady_clock::duration &period) {
-  const long now = std::chrono::steady_clock::now().time_since_epoch().count();
-  return (double) (now % period.count()) / (double) period.count();
+double compute_phase_ratio() {
+  const std::chrono::milliseconds t =
+      std::chrono::duration_cast<std::chrono::milliseconds>(
+          std::chrono::steady_clock::now().time_since_epoch());
+  return (double) (t.count() % kPeriodAirdata.count()) / (double) kPeriodAirdata.count();
 }
 
 ITelemetry::Sample make_airdata(unsigned long seq) {
-  const double phase_ratio = compute_phase_ratio(kPeriodAirdata);
+  const double phase_ratio = compute_phase_ratio();
   return ITelemetry::Sample {
     .type = ITelemetry::AIRDATA,
     .sequence = seq,
