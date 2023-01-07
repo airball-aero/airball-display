@@ -16,7 +16,6 @@
 #include "../util/one_shot_timer.h"
 #include "rapidjson/writer.h"
 #include "rapidjson/prettywriter.h"
-#include "rapidjson/filewritestream.h"
 
 namespace airball {
 
@@ -26,60 +25,110 @@ public:
   const std::string name;
   const T initial;
 
-  T get(const rapidjson::Document &doc) const {
-    if (doc.HasMember(name.c_str())) {
-      return get_impl(doc);
+  T get(std::unordered_map<std::string, Settings::CacheEntry>* cache,
+        const rapidjson::Document &doc) const {
+    if (cache->contains(name) || doc.HasMember(name.c_str())) {
+      return get_impl(cache, doc);
     }
     return initial;
   }
 
-  void set(rapidjson::Document& doc, T value) const {
-    if (doc.HasMember(name.c_str())) {
-      set_impl(doc, value);
+  void set(std::unordered_map<std::string, Settings::CacheEntry>* cache,
+           rapidjson::Document& doc, T value) const {
+    if (cache->contains(name) || doc.HasMember(name.c_str())) {
+      set_impl(cache, doc, value);
     }
   }
 
-  T get_impl(const rapidjson::Document &doc) const;
-  void set_impl(rapidjson::Document &doc, const T& value) const;
+  T get_impl(std::unordered_map<std::string, Settings::CacheEntry>* cache,
+             const rapidjson::Document &doc) const;
+
+  void set_impl(std::unordered_map<std::string, Settings::CacheEntry>* cache,
+                rapidjson::Document &doc,
+                const T& value) const;
 };
 
 template<>
-int Parameter<int>::get_impl(const rapidjson::Document &doc) const {
-  return doc[name.c_str()].GetInt();
+int Parameter<int>::get_impl(
+    std::unordered_map<std::string, Settings::CacheEntry>* cache,
+    const rapidjson::Document &doc) const {
+  if (!cache->contains(name)) {
+    Settings::CacheEntry e {
+        .int_ = doc[name.c_str()].GetInt(),
+    };
+    cache->insert(std::pair(name, e));
+  }
+  return cache->at(name).int_;
 }
 
 template<>
-double Parameter<double>::get_impl(const rapidjson::Document &doc) const {
-  return doc[name.c_str()].GetDouble();
+double Parameter<double>::get_impl(
+    std::unordered_map<std::string, Settings::CacheEntry>* cache,
+    const rapidjson::Document &doc) const {
+  if (!cache->contains(name)) {
+    Settings::CacheEntry e {
+        .double_ = doc[name.c_str()].GetDouble(),
+    };
+    cache->insert(std::pair(name, e));
+  }
+  return cache->at(name).double_;
 }
 
 template<>
-bool Parameter<bool>::get_impl(const rapidjson::Document &doc) const {
-  return doc[name.c_str()].GetBool();
+bool Parameter<bool>::get_impl(
+    std::unordered_map<std::string, Settings::CacheEntry>* cache,
+    const rapidjson::Document &doc) const {
+  if (!cache->contains(name)) {
+    Settings::CacheEntry e {
+        .bool_ = doc[name.c_str()].GetBool(),
+    };
+    cache->insert(std::pair(name, e));
+  }
+  return cache->at(name).bool_;
 }
 
 template<>
-std::string Parameter<std::string>::get_impl(const rapidjson::Document &doc) const {
-  return doc[name.c_str()].GetString();
+std::string Parameter<std::string>::get_impl(
+    std::unordered_map<std::string, Settings::CacheEntry>* cache,
+    const rapidjson::Document &doc) const {
+  if (!cache->contains(name)) {
+    Settings::CacheEntry e {
+        .string_ = doc[name.c_str()].GetString(),
+    };
+    cache->insert(std::pair(name, e));
+  }
+  return cache->at(name).string_;
 }
 
 template<>
-void Parameter<int>::set_impl(rapidjson::Document &doc, const int& value) const {
+void Parameter<int>::set_impl(
+    std::unordered_map<std::string, Settings::CacheEntry>* cache,
+    rapidjson::Document &doc,
+    const int& value) const {
   doc[name.c_str()].Set(value);
 }
 
 template<>
-void Parameter<double>::set_impl(rapidjson::Document &doc, const double& value) const {
+void Parameter<double>::set_impl(
+    std::unordered_map<std::string, Settings::CacheEntry>* cache,
+    rapidjson::Document &doc,
+    const double& value) const {
   doc[name.c_str()].Set(value);
 }
 
 template<>
-void Parameter<bool>::set_impl(rapidjson::Document &doc, const bool& value) const {
+void Parameter<bool>::set_impl(
+    std::unordered_map<std::string, Settings::CacheEntry>* cache,
+    rapidjson::Document &doc,
+    const bool& value) const {
   doc[name.c_str()].Set(value);
 }
 
 template<>
-void Parameter<std::string>::set_impl(rapidjson::Document &doc, const std::string& value) const {
+void Parameter<std::string>::set_impl(
+    std::unordered_map<std::string, Settings::CacheEntry>* cache,
+    rapidjson::Document &doc,
+    const std::string& value) const {
   doc[name.c_str()].Set(value.c_str());
 }
 
@@ -357,18 +406,20 @@ void Settings::load() {
   s << f.rdbuf();
   f.close();
   load_str(s.str());
+  cache_.clear();
 }
 
 void Settings::save() {
   rapidjson::StringBuffer buffer;
-  rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+  rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(buffer);
   document_.Accept(writer);
   save_str(buffer.GetString());
 }
 
 template<class T>
 T Settings::get_value(const Parameter<T> *p) const {
-  return p->get(document_);
+  return p->get((std::unordered_map<std::string, CacheEntry>*) &cache_, // cast away const
+                document_);
 }
 
 double Settings::v_full_scale() const {
@@ -518,15 +569,25 @@ void Settings::nextAdjustment() {
 
 void Settings::hidIncrement() {
   startAdjusting();
+  auto cache = (std::unordered_map<std::string, CacheEntry>*) &cache_; // cast away const
   switch (adjustment_) {
     case ISettings::ADJUSTMENT_BARO_SETTING:
-      BARO_SETTING.set(document_, BARO_SETTING.get(document_) + 0.01);
+      BARO_SETTING.set(
+          cache,
+          document_,
+          BARO_SETTING.get(cache, document_) + 0.01);
       break;
     case ISettings::ADJUSTMENT_SCREEN_BRIGHTNESS:
-      SCREEN_BRIGHTNESS.set(document_, std::min(SCREEN_BRIGHTNESS.get(document_) + 0.1, 1.0));
+      SCREEN_BRIGHTNESS.set(
+          cache,
+          document_,
+          std::min(SCREEN_BRIGHTNESS.get(cache, document_) + 0.1, 1.0));
       break;
     case ISettings::ADJUSTMENT_AUDIO_VOLUME:
-      AUDIO_VOLUME.set(document_, std::min(AUDIO_VOLUME.get(document_) + 0.1, 1.0));
+      AUDIO_VOLUME.set(
+          cache,
+          document_,
+          std::min(AUDIO_VOLUME.get(cache, document_) + 0.1, 1.0));
       break;
     default:
       return;
@@ -536,15 +597,25 @@ void Settings::hidIncrement() {
 
 void Settings::hidDecrement() {
   startAdjusting();
+  auto cache = (std::unordered_map<std::string, CacheEntry>*) &cache_; // cast away const
   switch (adjustment_) {
     case ISettings::ADJUSTMENT_BARO_SETTING:
-      BARO_SETTING.set(document_, BARO_SETTING.get(document_) - 0.01);
+      BARO_SETTING.set(
+          cache,
+          document_,
+          BARO_SETTING.get(cache, document_) - 0.01);
       break;
     case ISettings::ADJUSTMENT_SCREEN_BRIGHTNESS:
-      SCREEN_BRIGHTNESS.set(document_, std::max(SCREEN_BRIGHTNESS.get(document_) - 0.1, 0.0));
+      SCREEN_BRIGHTNESS.set(
+          cache,
+          document_,
+          std::max(SCREEN_BRIGHTNESS.get(cache, document_) - 0.1, 0.0));
       break;
     case ISettings::ADJUSTMENT_AUDIO_VOLUME:
-      AUDIO_VOLUME.set(document_, std::max(AUDIO_VOLUME.get(document_) - 0.1, 0.0));
+      AUDIO_VOLUME.set(
+          cache,
+          document_,
+          std::max(AUDIO_VOLUME.get(cache, document_) - 0.1, 0.0));
       break;
     default:
       return;

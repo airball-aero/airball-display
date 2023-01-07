@@ -60,12 +60,20 @@ public:
   void load();
   void save();
 
+  struct CacheEntry {
+    std::string string_;
+    double double_;
+    bool bool_;
+    int int_;
+  };
+
 private:
   void startAdjusting();
   void nextAdjustment();
 
   std::string path_;
   std::unique_ptr<SettingsEventSource> settingsEventSource_;
+  std::unordered_map<std::string, CacheEntry> cache_;
 
   void load_str(const std::string& s);
   void save_str(const std::string& s);
