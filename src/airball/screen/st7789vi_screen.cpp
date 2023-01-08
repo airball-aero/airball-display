@@ -28,6 +28,12 @@ ST7789VIScreen::~ST7789VIScreen() {
   free(data_);
 }
 
+void ST7789VIScreen::setBrightness(double value) {
+  value = std::max(value, 0.0);
+  value = std::min(value, 1.0);
+  w_.set_brightness(value * 255);
+}
+
 void ST7789VIScreen::flush() {
   w_.write_frame((uint16_t *) data_, kWidth * kHeight);
 }

@@ -14,6 +14,8 @@ public:
   ~X11Screen() override;
 
   void flush() override;
+
+  void setBrightness(double value) override {}
 };
 
 

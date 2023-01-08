@@ -22,6 +22,8 @@ public:
 
   void flush() override;
 
+  void setBrightness(double value) override {}
+
 private:
   unsigned long image_index_;
 };

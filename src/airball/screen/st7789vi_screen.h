@@ -19,6 +19,8 @@ public:
 
   virtual void flush() override;
 
+  void setBrightness(double value) override;
+
 private:
   st7789vi_frame_writer_smi w_;
   unsigned char *data_;

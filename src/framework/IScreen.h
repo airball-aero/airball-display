@@ -19,6 +19,9 @@ public:
 
   // Indicate to this Screen that the current image is to be flushed.
   virtual void flush() = 0;
+
+  // Set the brightness of this screen, from 0.0 (dark) to 1.0 (fully bright).
+  virtual void setBrightness(double value) = 0;
 };
 
 } // namespace airball
