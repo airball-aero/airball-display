@@ -38,7 +38,7 @@ DEFINE_string(settings_file_path, "airball-settings.json", "Path to settings fil
 
 DEFINE_string(settings_input_device_path, "", "Path to settings adjustment /dev/input device");
 
-const auto kFrameInterval = std::chrono::milliseconds(50);
+const auto kFrameInterval = std::chrono::milliseconds(0);
 
 namespace airball {
 

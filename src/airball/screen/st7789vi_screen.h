@@ -22,9 +22,6 @@ public:
 private:
   st7789vi_frame_writer_smi w_;
   unsigned char *data_;
-  std::thread paint_;
-  std::mutex paint_mu_;
-  std::condition_variable paint_cond_;
 };
 
 }  // namespace airball
