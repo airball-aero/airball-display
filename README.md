@@ -178,3 +178,43 @@ dtoverlay=smi
 dtoverlay=smi-dev
 ```
 
+To free up some GPIO pins, we need to make the SMI not control the address
+pins. Create a new directory and de-compile the relevant DTB overlay using
+the command:
+
+```
+$ dtc -I dtb -O dts /boot/overlays/smi.dtbo  > smi.dtb
+```
+
+You will get an `smi.dtb` containing the snippet:
+
+```
+smi_pins {
+  brcm,pins = <0x02 0x03 0x04 0x05 0x06 0x07 ... >;
+  brcm,function = <0x05 0x05 0x05 0x05 0x05 0x05 ... >;
+  brcm,pull = <0x02 0x02 0x02 0x02 0x02 0x02 ... >;
+  phandle = <0x01>;
+};
+```
+
+The `brcm,pins`, `brcm,function` and `brcm,pull` fields must all contain the
+same number of entries. The SMI system uses GPIO pins `0` through `5` as address
+lines. You need to remove the *same* number of entries from all three fields,
+so that `brcm,pins` does not contain pins `0` through `5`. In this example,
+we delete the first 4 entries of each field and end up with:
+
+```
+smi_pins {
+  brcm,pins = <0x06 0x07 ... >;
+  brcm,function = <0x05 0x05 ... >;
+  brcm,pull = <0x02 0x02 ... >;
+  phandle = <0x01>;
+};
+```
+
+Now re-compile the DTB and put it back into `/boot`:
+
+```
+$ dtc -I dts -O dtb smi.dtb  > smi.dtbo
+$ sudo cp smi.dtbo /boot/overlays
+```
