@@ -16,261 +16,9 @@
 #include "../util/one_shot_timer.h"
 #include "rapidjson/writer.h"
 #include "rapidjson/prettywriter.h"
+#include "SettingsStore.h"
 
 namespace airball {
-
-template<class T>
-class Parameter {
-public:
-  const std::string name;
-  const T initial;
-
-  T get(std::unordered_map<std::string, Settings::CacheEntry>* cache,
-        const rapidjson::Document &doc) const {
-    if (cache->contains(name) || doc.HasMember(name.c_str())) {
-      return get_impl(cache, doc);
-    }
-    return initial;
-  }
-
-  void set(std::unordered_map<std::string, Settings::CacheEntry>* cache,
-           rapidjson::Document& doc, T value) const {
-    if (cache->contains(name) || doc.HasMember(name.c_str())) {
-      set_impl(cache, doc, value);
-    }
-  }
-
-  T get_impl(std::unordered_map<std::string, Settings::CacheEntry>* cache,
-             const rapidjson::Document &doc) const;
-
-  void set_impl(std::unordered_map<std::string, Settings::CacheEntry>* cache,
-                rapidjson::Document &doc,
-                const T& value) const;
-};
-
-template<>
-int Parameter<int>::get_impl(
-    std::unordered_map<std::string, Settings::CacheEntry>* cache,
-    const rapidjson::Document &doc) const {
-  if (!cache->contains(name)) {
-    Settings::CacheEntry e {
-        .int_ = doc[name.c_str()].GetInt(),
-    };
-    cache->insert(std::pair(name, e));
-  }
-  return cache->at(name).int_;
-}
-
-template<>
-double Parameter<double>::get_impl(
-    std::unordered_map<std::string, Settings::CacheEntry>* cache,
-    const rapidjson::Document &doc) const {
-  if (!cache->contains(name)) {
-    Settings::CacheEntry e {
-        .double_ = doc[name.c_str()].GetDouble(),
-    };
-    cache->insert(std::pair(name, e));
-  }
-  return cache->at(name).double_;
-}
-
-template<>
-bool Parameter<bool>::get_impl(
-    std::unordered_map<std::string, Settings::CacheEntry>* cache,
-    const rapidjson::Document &doc) const {
-  if (!cache->contains(name)) {
-    Settings::CacheEntry e {
-        .bool_ = doc[name.c_str()].GetBool(),
-    };
-    cache->insert(std::pair(name, e));
-  }
-  return cache->at(name).bool_;
-}
-
-template<>
-std::string Parameter<std::string>::get_impl(
-    std::unordered_map<std::string, Settings::CacheEntry>* cache,
-    const rapidjson::Document &doc) const {
-  if (!cache->contains(name)) {
-    Settings::CacheEntry e {
-        .string_ = doc[name.c_str()].GetString(),
-    };
-    cache->insert(std::pair(name, e));
-  }
-  return cache->at(name).string_;
-}
-
-template<>
-void Parameter<int>::set_impl(
-    std::unordered_map<std::string, Settings::CacheEntry>* cache,
-    rapidjson::Document &doc,
-    const int& value) const {
-  doc[name.c_str()].Set(value);
-}
-
-template<>
-void Parameter<double>::set_impl(
-    std::unordered_map<std::string, Settings::CacheEntry>* cache,
-    rapidjson::Document &doc,
-    const double& value) const {
-  doc[name.c_str()].Set(value);
-}
-
-template<>
-void Parameter<bool>::set_impl(
-    std::unordered_map<std::string, Settings::CacheEntry>* cache,
-    rapidjson::Document &doc,
-    const bool& value) const {
-  doc[name.c_str()].Set(value);
-}
-
-template<>
-void Parameter<std::string>::set_impl(
-    std::unordered_map<std::string, Settings::CacheEntry>* cache,
-    rapidjson::Document &doc,
-    const std::string& value) const {
-  doc[name.c_str()].Set(value.c_str());
-}
-
-const Parameter<double> V_FULL_SCALE = {
-    .name="ias_full_scale",
-    .initial=100,
-};
-
-const Parameter<double> V_R = {
-    .name="v_r",
-    .initial=100,
-};
-
-const Parameter<double> V_FE = {
-    .name="v_fe",
-    .initial=100,
-};
-
-const Parameter<double> V_NO = {
-    .name="v_no",
-    .initial=100,
-};
-
-const Parameter<double> V_NE = {
-    .name="v_ne",
-    .initial=100,
-};
-
-const Parameter<double> ALPHA_STALL = {
-    .name="alpha_stall",
-    .initial=15.0,
-};
-
-const Parameter<double> ALPHA_STALL_WARNING = {
-    .name="alpha_stall_warning",
-    .initial=14.0,
-};
-
-const Parameter<double> ALPHA_MIN = {
-    .name="alpha_min",
-    .initial=0.0,
-};
-
-const Parameter<double> ALPHA_MAX = {
-    .name="alpha_max",
-    .initial=20.0,
-};
-
-const Parameter<double> ALPHA_X = {
-    .name="alpha_x",
-    .initial=12.0,
-};
-
-const Parameter<double> ALPHA_Y = {
-    .name="alpha_y",
-    .initial=10.0,
-};
-
-const Parameter<double> ALPHA_REF = {
-    .name="alpha_ref",
-    .initial=14.0,
-};
-
-const Parameter<double> BETA_FULL_SCALE = {
-    .name="beta_full_scale",
-    .initial=20.0,
-};
-
-const Parameter<double> BETA_BIAS = {
-    .name="beta_bias",
-    .initial=0.0,
-};
-
-const Parameter<double> BARO_SETTING = {
-    .name="baro_setting",
-    .initial=29.92,
-};
-
-const Parameter<double> BALL_SMOOTHING_FACTOR = {
-    .name="ball_smoothing_factor",
-    .initial=1.0,
-};
-
-const Parameter<double> VSI_SMOOTHING_FACTOR = {
-    .name="vsi_smoothing_factor",
-    .initial=1.0,
-};
-
-const Parameter<int> SCREEN_WIDTH = {
-    .name="screen_width",
-    .initial=272,
-};
-
-const Parameter<int> SCREEN_HEIGHT = {
-    .name="screen_height",
-    .initial=480,
-};
-
-const Parameter<bool> SHOW_ALTIMETER = {
-    .name="show_altimeter",
-    .initial=true,
-};
-
-const Parameter<bool> SHOW_LINK_STATUS = {
-    .name="show_link_status",
-    .initial=true,
-};
-
-const Parameter<bool> SHOW_PROBE_BATTERY_STATUS = {
-    .name="show_probe_battery_status",
-    .initial=true,
-};
-
-const Parameter<bool> DECLUTTER = {
-    .name="declutter",
-    .initial=false,
-};
-
-const Parameter<std::string> SOUND_SCHEME = {
-    .name="sound_scheme",
-    .initial="flyonspeed",
-};
-
-const Parameter<double> AUDIO_VOLUME = {
-    .name="audio_volume",
-    .initial=1.0,
-};
-
-const Parameter<std::string> SPEED_UNITS = {
-    .name="speed_units",
-    .initial="mph",
-};
-
-const Parameter<bool> ROTATE_SCREEN = {
-    .name="rotate_screen",
-    .initial=false,
-};
-
-const Parameter<double> SCREEN_BRIGHTNESS = {
-    .name="screen_brightness",
-    .initial=1.0,
-};
 
 const auto kInputDelay = std::chrono::milliseconds(5000);
 
@@ -374,30 +122,17 @@ Settings::Settings(const std::string& settingsFilePath,
                    IEventQueue *eventQueue)
     : path_(settingsFilePath),
       eventQueue_(eventQueue),
-      adjustment_(ADJUSTMENT_NONE){
-  settingsEventSource_.reset(
-      new SettingsEventSource(
+      adjustment_(ADJUSTMENT_NONE) {
+  settingsEventSource_ = std::make_unique<SettingsEventSource>(
           settingsFilePath,
           inputDevicePath,
           eventQueue,
-          this));
+          this);
+  store_ = std::make_unique<SettingsStore>();
   load();
 }
 
 Settings::~Settings() {}
-
-void Settings::load_str(const std::string& str) {
-  document_.Parse("{}");
-  document_.Parse(str.c_str());
-}
-
-void Settings::save_str(const std::string& str) {
-  std::ofstream f;
-  f.open(path_);
-  f << str;
-  f.flush();
-  f.close();
-}
 
 void Settings::load() {
   std::ifstream f;
@@ -405,133 +140,138 @@ void Settings::load() {
   std::stringstream s;
   s << f.rdbuf();
   f.close();
-  load_str(s.str());
-  cache_.clear();
+  rapidjson::Document d;
+  d.Parse(s.str().c_str());
+  for (Parameter *p : store_->ALL_PARAMS) {
+    p->load(d);
+  }
 }
 
 void Settings::save() {
+  rapidjson::Document d;
+  for (Parameter *p : store_->ALL_PARAMS) {
+    p->save(d);
+  }
   rapidjson::StringBuffer buffer;
   rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(buffer);
-  document_.Accept(writer);
-  save_str(buffer.GetString());
-}
-
-template<class T>
-T Settings::get_value(const Parameter<T> *p) const {
-  return p->get((std::unordered_map<std::string, CacheEntry>*) &cache_, // cast away const
-                document_);
+  d.Accept(writer);
+  std::ofstream f;
+  f.open(path_);
+  f << buffer.GetString();
+  f.flush();
+  f.close();
 }
 
 double Settings::v_full_scale() const {
-  return get_value(&V_FULL_SCALE);
+  return store_->V_FULL_SCALE.get();
 }
 
 double Settings::v_r() const {
-  return get_value(&V_R);
+  return store_->V_R.get();
 }
 
 double Settings::v_fe() const {
-  return get_value(&V_FE);
+  return store_->V_FE.get();
 }
 
 double Settings::v_no() const {
-  return get_value(&V_NO);
+  return store_->V_NO.get();
 }
 
 double Settings::v_ne() const {
-  return get_value(&V_NE);
+  return store_->V_NE.get();
 }
 
 double Settings::alpha_stall() const {
-  return get_value(&ALPHA_STALL);
+  return store_->ALPHA_STALL.get();
 }
 
 double Settings::alpha_stall_warning() const {
-  return get_value(&ALPHA_STALL_WARNING);
+  return store_->ALPHA_STALL_WARNING.get();
 }
 
 double Settings::alpha_min() const {
-  return get_value(&ALPHA_MIN);
+  return store_->ALPHA_MIN.get();
 }
 
 double Settings::alpha_max() const {
-  return get_value(&ALPHA_MAX);
+  return store_->ALPHA_MAX.get();
 }
 
 double Settings::alpha_x() const {
-  return get_value(&ALPHA_X);
+  return store_->ALPHA_X.get();
 }
 
 double Settings::alpha_y() const {
-  return get_value(&ALPHA_Y);
+  return store_->ALPHA_Y.get();
 }
 
 double Settings::alpha_ref() const {
-  return get_value(&ALPHA_REF);
+  return store_->ALPHA_REF.get();
 }
 
 double Settings::beta_full_scale() const {
-  return get_value(&BETA_FULL_SCALE);
+  return store_->BETA_FULL_SCALE.get();
 }
 
 double Settings::beta_bias() const {
-  return get_value(&BETA_BIAS);
+  return store_->BETA_BIAS.get();
 }
 
 double Settings::baro_setting() const {
-  return get_value(&BARO_SETTING);
+  return store_->BARO_SETTING.get();
 }
 
 double Settings::ball_smoothing_factor() const {
-  return get_value(&BALL_SMOOTHING_FACTOR);
+  return store_->BALL_SMOOTHING_FACTOR.get();
 }
 
 double Settings::vsi_smoothing_factor() const {
-  return get_value(&VSI_SMOOTHING_FACTOR);
+  return store_->VSI_SMOOTHING_FACTOR.get();
 }
 
 int Settings::screen_width() const {
-  return get_value(&SCREEN_WIDTH);
+  return store_->SCREEN_WIDTH.get();
 }
 
 int Settings::screen_height() const {
-  return get_value(&SCREEN_HEIGHT);
+  return store_->SCREEN_HEIGHT.get();
 }
 
 bool Settings::show_altimeter() const {
-  return get_value(&SHOW_ALTIMETER);
+  return store_->SHOW_ALTIMETER.get();
 }
 
 bool Settings::show_link_status() const {
-  return get_value(&SHOW_LINK_STATUS);
+  return store_->SHOW_LINK_STATUS.get();
 }
 
 bool Settings::show_probe_battery_status() const {
-  return get_value(&SHOW_PROBE_BATTERY_STATUS);
+  return store_->SHOW_PROBE_BATTERY_STATUS.get();
 }
 
 bool Settings::declutter() const {
-  return get_value(&DECLUTTER);
+  return store_->DECLUTTER.get();
 }
 
 std::string Settings::sound_scheme() const {
-  return get_value(&SOUND_SCHEME);
+  return store_->SOUND_SCHEME.get();
 }
 
 double Settings::audio_volume() const {
-  return get_value(&AUDIO_VOLUME);
+  return store_->AUDIO_VOLUME.get();
 }
 
 std::string Settings::speed_units() const {
-  return get_value(&SPEED_UNITS);
+  return store_->SPEED_UNITS.get();
 }
 
 bool Settings::rotate_screen() const {
-  return get_value(&ROTATE_SCREEN);
+  return store_->ROTATE_SCREEN.get();
 }
 
 double Settings::screen_brightness() const {
-  return get_value(&SCREEN_BRIGHTNESS);
+  return store_->SCREEN_BRIGHTNESS.get();
 }
 
 Settings::Adjustment Settings::adjustment() const {
@@ -569,25 +309,15 @@ void Settings::nextAdjustment() {
 
 void Settings::hidIncrement() {
   startAdjusting();
-  auto cache = (std::unordered_map<std::string, CacheEntry>*) &cache_; // cast away const
   switch (adjustment_) {
     case ISettings::ADJUSTMENT_BARO_SETTING:
-      BARO_SETTING.set(
-          cache,
-          document_,
-          BARO_SETTING.get(cache, document_) + 0.01);
+      store_->BARO_SETTING.set(store_->BARO_SETTING.get() + 0.01);
       break;
     case ISettings::ADJUSTMENT_SCREEN_BRIGHTNESS:
-      SCREEN_BRIGHTNESS.set(
-          cache,
-          document_,
-          std::min(SCREEN_BRIGHTNESS.get(cache, document_) + 0.1, 1.0));
+      store_->SCREEN_BRIGHTNESS.set(std::min(store_->SCREEN_BRIGHTNESS.get() + 0.1, 1.0));
       break;
     case ISettings::ADJUSTMENT_AUDIO_VOLUME:
-      AUDIO_VOLUME.set(
-          cache,
-          document_,
-          std::min(AUDIO_VOLUME.get(cache, document_) + 0.1, 1.0));
+      store_->AUDIO_VOLUME.set(std::min(store_->AUDIO_VOLUME.get() + 0.1, 1.0));
       break;
     default:
       return;
@@ -597,25 +327,15 @@ void Settings::hidIncrement() {
 
 void Settings::hidDecrement() {
   startAdjusting();
-  auto cache = (std::unordered_map<std::string, CacheEntry>*) &cache_; // cast away const
   switch (adjustment_) {
     case ISettings::ADJUSTMENT_BARO_SETTING:
-      BARO_SETTING.set(
-          cache,
-          document_,
-          BARO_SETTING.get(cache, document_) - 0.01);
+      store_->BARO_SETTING.set(store_->BARO_SETTING.get() - 0.01);
       break;
     case ISettings::ADJUSTMENT_SCREEN_BRIGHTNESS:
-      SCREEN_BRIGHTNESS.set(
-          cache,
-          document_,
-          std::max(SCREEN_BRIGHTNESS.get(cache, document_) - 0.1, 0.0));
+      store_->SCREEN_BRIGHTNESS.set(std::max(store_->SCREEN_BRIGHTNESS.get() - 0.1, 0.0));
       break;
     case ISettings::ADJUSTMENT_AUDIO_VOLUME:
-      AUDIO_VOLUME.set(
-          cache,
-          document_,
-          std::max(AUDIO_VOLUME.get(cache, document_) - 0.1, 0.0));
+      store_->AUDIO_VOLUME.set(std::max(store_->AUDIO_VOLUME.get() - 0.1, 0.0));
       break;
     default:
       return;
