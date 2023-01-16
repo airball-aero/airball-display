@@ -94,6 +94,8 @@ void st7789vi_frame_writer::initialize() {
 
   command_out(0x29);  //display on
   delay(100);
+
+  set_brightness(0);
 }
 
 void st7789vi_frame_writer::delay(uint16_t ms) {
