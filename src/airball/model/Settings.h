@@ -64,6 +64,7 @@ private:
   void nextAdjustment();
 
   std::string path_;
+  bool loaded_;
   std::unique_ptr<SettingsEventSource> settingsEventSource_;
   std::unique_ptr<SettingsStore> store_;
   IEventQueue* eventQueue_;

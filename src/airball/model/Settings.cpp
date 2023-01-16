@@ -4,7 +4,6 @@
 #include <fstream>
 #include <sstream>
 #include <fcntl.h>
-#include <csignal>
 #include <unistd.h>
 
 #include <linux/input.h>
@@ -121,6 +120,7 @@ Settings::Settings(const std::string& settingsFilePath,
                    const std::string& inputDevicePath,
                    IEventQueue *eventQueue)
     : path_(settingsFilePath),
+      loaded_(false),
       eventQueue_(eventQueue),
       adjustment_(ADJUSTMENT_NONE) {
   settingsEventSource_ = std::make_unique<SettingsEventSource>(
@@ -140,21 +140,31 @@ void Settings::load() {
   std::stringstream s;
   s << f.rdbuf();
   f.close();
+
   rapidjson::Document d;
   d.Parse(s.str().c_str());
   for (Parameter *p : store_->ALL_PARAMS) {
     p->load(d);
   }
+
+  loaded_ = true;
 }
 
 void Settings::save() {
+  if (!loaded_) {
+    return;
+  }
+
   rapidjson::Document d;
+  d.SetObject();
   for (Parameter *p : store_->ALL_PARAMS) {
     p->save(d);
   }
+
   rapidjson::StringBuffer buffer;
   rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(buffer);
   d.Accept(writer);
+
   std::ofstream f;
   f.open(path_);
   f << buffer.GetString();
@@ -314,10 +324,10 @@ void Settings::hidIncrement() {
       store_->BARO_SETTING.set(store_->BARO_SETTING.get() + 0.01);
       break;
     case ISettings::ADJUSTMENT_SCREEN_BRIGHTNESS:
-      store_->SCREEN_BRIGHTNESS.set(std::min(store_->SCREEN_BRIGHTNESS.get() + 0.1, 1.0));
+      store_->SCREEN_BRIGHTNESS.set(std::min(store_->SCREEN_BRIGHTNESS.get() + 0.05, 1.0));
       break;
     case ISettings::ADJUSTMENT_AUDIO_VOLUME:
-      store_->AUDIO_VOLUME.set(std::min(store_->AUDIO_VOLUME.get() + 0.1, 1.0));
+      store_->AUDIO_VOLUME.set(std::min(store_->AUDIO_VOLUME.get() + 0.05, 1.0));
       break;
     default:
       return;
@@ -332,10 +342,10 @@ void Settings::hidDecrement() {
       store_->BARO_SETTING.set(store_->BARO_SETTING.get() - 0.01);
       break;
     case ISettings::ADJUSTMENT_SCREEN_BRIGHTNESS:
-      store_->SCREEN_BRIGHTNESS.set(std::max(store_->SCREEN_BRIGHTNESS.get() - 0.1, 0.0));
+      store_->SCREEN_BRIGHTNESS.set(std::max(store_->SCREEN_BRIGHTNESS.get() - 0.05, 0.0));
       break;
     case ISettings::ADJUSTMENT_AUDIO_VOLUME:
-      store_->AUDIO_VOLUME.set(std::max(store_->AUDIO_VOLUME.get() - 0.1, 0.0));
+      store_->AUDIO_VOLUME.set(std::max(store_->AUDIO_VOLUME.get() - 0.05, 0.0));
       break;
     default:
       return;

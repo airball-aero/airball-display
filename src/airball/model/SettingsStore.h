@@ -48,7 +48,10 @@ void TypedParameter<int>::loadImpl(const rapidjson::Document &doc) {
 
 template<>
 void TypedParameter<int>::saveImpl(rapidjson::Document &doc) const {
-  doc[name_.c_str()].Set(value_);
+  doc.AddMember(
+      rapidjson::Value(name_.c_str(), doc.GetAllocator()).Move(),
+      rapidjson::Value(value_).Move(),
+      doc.GetAllocator());
 }
 
 template<>
@@ -58,7 +61,10 @@ void TypedParameter<double>::loadImpl(const rapidjson::Document &doc) {
 
 template<>
 void TypedParameter<double>::saveImpl(rapidjson::Document &doc) const {
-  doc[name_.c_str()].Set(value_);
+  doc.AddMember(
+      rapidjson::Value(name_.c_str(), doc.GetAllocator()).Move(),
+      rapidjson::Value(value_).Move(),
+      doc.GetAllocator());
 }
 
 template<>
@@ -68,7 +74,10 @@ void TypedParameter<bool>::loadImpl(const rapidjson::Document &doc) {
 
 template<>
 void TypedParameter<bool>::saveImpl(rapidjson::Document &doc) const {
-  doc[name_.c_str()].Set(value_);
+  doc.AddMember(
+      rapidjson::Value(name_.c_str(), doc.GetAllocator()).Move(),
+      rapidjson::Value(value_).Move(),
+      doc.GetAllocator());
 }
 
 template<>
@@ -78,7 +87,10 @@ void TypedParameter<std::string>::loadImpl(const rapidjson::Document &doc) {
 
 template<>
 void TypedParameter<std::string>::saveImpl(rapidjson::Document &doc) const {
-  doc[name_.c_str()].Set(value_.c_str());
+  doc.AddMember(
+      rapidjson::Value(name_.c_str(), doc.GetAllocator()).Move(),
+      rapidjson::Value().SetString(value_.c_str(), doc.GetAllocator()).Move(),
+      doc.GetAllocator());
 }
 
 class SettingsStore {
