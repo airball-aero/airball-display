@@ -375,6 +375,8 @@ double PaintCycle::airspeed_display_units_to_radius(const double airspeed_displa
 void PaintCycle::paint() {
   layout();
 
+  screen_->setBrightness(model_.settings()->screen_brightness());
+
   // cairo_push_group(screen_->cr());
 
   if (model_.settings()->rotate_screen()) {
