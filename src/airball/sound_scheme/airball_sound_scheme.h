@@ -7,7 +7,7 @@
 
 namespace airball {
 
-class sound_scheme : public ISoundScheme<IAirballModel> {
+class airball_sound_scheme : public ISoundScheme<IAirballModel> {
 public:
   void install(ISoundMixer* mixer) override;
   void remove(ISoundMixer* mixer) override;

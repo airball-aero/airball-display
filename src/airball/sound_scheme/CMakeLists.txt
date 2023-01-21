@@ -1,5 +1,5 @@
 add_library(sound_scheme
-        sound_scheme.cpp
+        airball_sound_scheme.cpp
         flyonspeed_scheme.cpp
         stallfence_scheme.cpp)
 target_link_libraries(sound_scheme

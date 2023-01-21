@@ -1,4 +1,4 @@
-#include "sound_scheme.h"
+#include "airball_sound_scheme.h"
 #include "stallfence_scheme.h"
 #include "flyonspeed_scheme.h"
 
@@ -7,18 +7,18 @@ namespace airball {
 const std::string kFlyonspeed = "flyonspeed";
 const std::string kStallfence = "stallfence";
 
-void sound_scheme::install(ISoundMixer *mixer) {
+void airball_sound_scheme::install(ISoundMixer *mixer) {
   // We don't know what to install yet since we can't see the ISettings
 }
 
-void sound_scheme::remove(ISoundMixer *mixer) {
+void airball_sound_scheme::remove(ISoundMixer *mixer) {
   if (soundScheme_ != nullptr) {
     soundScheme_->remove(mixer);
     soundScheme_ = nullptr;
   }
 }
 
-void sound_scheme::update(const IAirballModel &model, ISoundMixer *mixer) {
+void airball_sound_scheme::update(const IAirballModel &model, ISoundMixer *mixer) {
   bool is_installed = soundScheme_ != nullptr;
   bool is_stallfence = is_installed && dynamic_cast<stallfence_scheme*>(soundScheme_.get()) != nullptr;
   bool is_flyonspeed = is_installed && dynamic_cast<flyonspeed_scheme*>(soundScheme_.get()) != nullptr;

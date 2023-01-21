@@ -9,13 +9,23 @@ namespace airball {
 constexpr unsigned int kDesiredRate = 44100;
 constexpr snd_pcm_uframes_t kDesiredPeriodSize = 512;
 
-sound_mixer::sound_mixer(std::string device_name)
+sound_mixer::sound_mixer(const std::string& device_name)
     : device_name_(device_name),
       done_(false),
       handle_(nullptr),
       actual_rate_(kDesiredRate),
       actual_period_size_(kDesiredPeriodSize),
       server_([&]() { loop(); }) {}
+
+
+sound_mixer::~sound_mixer() {
+  {
+    std::lock_guard<std::mutex> lock(mut_);
+    start_.notify_one();
+    done_ = true;
+  }
+  server_.join();
+}
 
 void sound_mixer::loop() {
   std::unique_lock<std::mutex> start_lock(mut_);
@@ -116,15 +126,6 @@ snd_pcm_uframes_t sound_mixer::octaves_to_period(
     double octaves) {
   return frequency_to_period(
       base_cycles_per_second * std::pow(2, octaves));
-}
-
-sound_mixer::~sound_mixer() {
-  {
-    std::lock_guard<std::mutex> lock(mut_);
-    start_.notify_one();
-    done_ = true;
-  }
-  server_.join();
 }
 
 } // namespace airball

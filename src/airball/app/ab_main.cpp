@@ -13,6 +13,8 @@
 #include "../model/ISettings.h"
 #include "../view/AirballView.h"
 #include "../screen/image_screen.h"
+#include "../sound_mixer/sound_mixer.h"
+#include "../sound_scheme/airball_sound_scheme.h"
 
 #ifdef AIRBALL_BCM2835
 #include "../screen/st7789vi_screen.h"
@@ -33,6 +35,8 @@ const std::string kTelemetryFake = "fake";
 DEFINE_string(telemetry, kTelemetryFake, "Telemetry (udp, log, fake)");
 DEFINE_uint32(telemetry_udp_port, 30123, "Listening port for UDP telemetry");
 DEFINE_string(telemetry_log_path, "airball.log", "File path for log telemetry");
+
+DEFINE_string(sound_device, "hw:0", "ALSA sound device");
 
 DEFINE_string(settings_file_path, "airball-settings.json", "Path to settings file");
 
@@ -105,6 +109,8 @@ protected:
             settings.get())),
         std::move(settings)));
     setView(std::move(std::make_unique<AirballView>()));
+    setSoundMixer(std::make_unique<sound_mixer>(FLAGS_sound_device));
+    setSoundScheme(std::make_unique<airball_sound_scheme>());
   }
 };
 

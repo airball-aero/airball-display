@@ -17,8 +17,8 @@ namespace airball {
 
 class sound_mixer : public ISoundMixer {
 public:
-  explicit sound_mixer(std::string device_name);
-  ~sound_mixer();
+  explicit sound_mixer(const std::string& device_name);
+  ~sound_mixer() override;
 
   bool start();
 

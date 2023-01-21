@@ -7,7 +7,9 @@ target_link_libraries(ab
         screen_linux
         util
         model
-        view)
+        view
+        sound_mixer
+        sound_scheme)
 
 if (AIRBALL_BCM2835)
 

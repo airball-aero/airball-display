@@ -63,14 +63,17 @@ public:
 
 class TestModel : public airball::IAirballModel {
 public:
-  TestModel(const airball::ISettings* settings) : settings_(settings) {}
+  TestModel(const airball::ISettings* settings,
+            const airball::IAirdata* airdata)
+      : settings_(settings), airdata_(airdata) {}
 
-  const airball::ISettings* settings() { return settings_; }
+  const airball::ISettings* settings() const override { return settings_; }
 
-  const airball::IAirdata* airdata() { return nullptr; }
+  const airball::IAirdata* airdata() const override { return airdata_; }
 
 private:
   const airball::ISettings* settings_;
+  const airball::IAirdata* airdata_;
 };
 
 class TestAirdata : public airball::IAirdata {
@@ -125,16 +128,18 @@ int main(int argc, char**argv) {
 
   TestAirdata airdata;
 
+  TestModel model(&settings, &airdata);
+
   std::string device_name(argv[1]);
   std::string scheme_name(argv[2]);
 
   airball::sound_mixer mixer(device_name);
-  std::unique_ptr<airball::sound_scheme> scheme;
+  std::unique_ptr<airball::airball_sound_scheme> scheme;
 
   if (scheme_name == "flyonspeed") {
-    scheme.reset(new airball::flyonspeed_scheme( ));
+    scheme = std::make_unique<airball::flyonspeed_scheme>();
   } else if (scheme_name == "stallfence") {
-    scheme.reset(new airball::stallfence_scheme());
+    scheme = std::make_unique<airball::stallfence_scheme>();
   } else {
     std::cerr << "Unknown scheme: " << scheme_name << std::endl;
     return -1;
@@ -152,11 +157,11 @@ int main(int argc, char**argv) {
         degrees_to_radians(beta),
         0.0,
         0.0));
-    scheme->update(model);
+    scheme->update(model, &mixer);
     std::this_thread::sleep_for(std::chrono::duration<double, std::milli>(10));
   };
 
-  double alpha = 0.0;
+  double alpha = 10.0;
   double beta = 0.0;
 
   set_alpha_beta(alpha, beta);
