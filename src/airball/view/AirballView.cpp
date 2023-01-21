@@ -386,10 +386,10 @@ void PaintCycle::paint() {
 
   cairo_save(screen_->cr());
 
+  paintBackground();
+
   cairo_rectangle(screen_->cr(), 0, 0, width_, airballHeight_);
   cairo_clip(screen_->cr());
-
-  paintBackground();
 
   if (model_.airdata()->valid()) {
     paintRawAirballs();
