@@ -15,6 +15,8 @@ namespace airball {
 
 class ISoundMixer {
 public:
+  virtual ~ISoundMixer() = default;
+
   virtual void set_layers(std::vector<ISoundLayer*> layers) = 0;
 
   virtual snd_pcm_uframes_t actual_period_size() = 0;

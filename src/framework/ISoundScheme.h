@@ -8,6 +8,7 @@ namespace airball {
 template <typename Model>
 class ISoundScheme {
 public:
+  virtual ~ISoundScheme() = default;
   virtual void install(ISoundMixer* mixer) = 0;
   virtual void remove(ISoundMixer* mixer) = 0;
   virtual void update(const Model& m, ISoundMixer* mixer) = 0;

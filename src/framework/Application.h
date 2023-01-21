@@ -31,7 +31,7 @@ public:
 
   void run() {
     initialize();
-    // soundScheme_->install(soundMixer_.get());
+    soundScheme_->install(soundMixer_.get());
     while (running()) {
       std::vector<std::function<void()>> currentEvents;
       {
@@ -43,7 +43,7 @@ public:
       }
       view_->paint(*model_, screen_.get());
       screen_->flush();
-      // soundScheme_->update(*model_, soundMixer_.get());
+      soundScheme_->update(*model_, soundMixer_.get());
       std::this_thread::sleep_for(frameInterval_);
     }
     // soundScheme_->remove(soundMixer_.get());
