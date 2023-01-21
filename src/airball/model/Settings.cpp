@@ -142,6 +142,7 @@ void Settings::load() {
   f.close();
 
   rapidjson::Document d;
+  d.SetObject();
   d.Parse(s.str().c_str());
   for (Parameter *p : store_->ALL_PARAMS) {
     p->load(d);
