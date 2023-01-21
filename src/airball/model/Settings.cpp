@@ -313,6 +313,7 @@ void Settings::nextAdjustment() {
       break;
     case ISettings::ADJUSTMENT_AUDIO_VOLUME:
       adjustment_ = ADJUSTMENT_SHOW_ALTIMETER;
+      break;
     case ISettings::ADJUSTMENT_SHOW_ALTIMETER:
     default:
       adjustment_ = ADJUSTMENT_NONE;
