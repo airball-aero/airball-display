@@ -1188,6 +1188,9 @@ void PaintCycle::paintAdjusting() {
     case ISettings::ADJUSTMENT_SCREEN_BRIGHTNESS:
       buf << "BRT";
       break;
+    case ISettings::ADJUSTMENT_SHOW_ALTIMETER:
+      buf << "ALT?";
+      break;
     default:
       return;
   }

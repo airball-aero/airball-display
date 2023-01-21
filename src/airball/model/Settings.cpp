@@ -312,6 +312,8 @@ void Settings::nextAdjustment() {
       adjustment_ = ADJUSTMENT_AUDIO_VOLUME;
       break;
     case ISettings::ADJUSTMENT_AUDIO_VOLUME:
+      adjustment_ = ADJUSTMENT_SHOW_ALTIMETER;
+    case ISettings::ADJUSTMENT_SHOW_ALTIMETER:
     default:
       adjustment_ = ADJUSTMENT_NONE;
       break;
@@ -330,6 +332,9 @@ void Settings::hidIncrement() {
     case ISettings::ADJUSTMENT_AUDIO_VOLUME:
       store_->AUDIO_VOLUME.set(std::min(store_->AUDIO_VOLUME.get() + 0.05, 1.0));
       break;
+    case ISettings::ADJUSTMENT_SHOW_ALTIMETER:
+      store_->SHOW_ALTIMETER.set(!store_->SHOW_ALTIMETER.get());
+      break;
     default:
       return;
   }
@@ -347,6 +352,9 @@ void Settings::hidDecrement() {
       break;
     case ISettings::ADJUSTMENT_AUDIO_VOLUME:
       store_->AUDIO_VOLUME.set(std::max(store_->AUDIO_VOLUME.get() - 0.05, 0.0));
+      break;
+    case ISettings::ADJUSTMENT_SHOW_ALTIMETER:
+      store_->SHOW_ALTIMETER.set(!store_->SHOW_ALTIMETER.get());
       break;
     default:
       return;
