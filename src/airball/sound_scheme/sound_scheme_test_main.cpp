@@ -20,7 +20,7 @@ public:
   TestSettings(const std::string& sound_scheme)
       : sound_scheme_(sound_scheme) {}
 
-  double ias_full_scale() const override { return v_full_scale_; }
+  double ias_full_scale() const override { return ias_full_scale_; }
   double v_r() const override { return v_r_; }
   double v_fe() const override { return v_fe_; }
   double v_no() const override { return v_no_; }
@@ -52,7 +52,7 @@ public:
   Adjustment adjustment() const override { return ADJUSTMENT_NONE; }
 
   std::string sound_scheme_;
-  double v_full_scale_ = 0;
+  double ias_full_scale_ = 0;
   double v_r_ = 0;
   double v_fe_ = 0;
   double v_no_ = 0;
