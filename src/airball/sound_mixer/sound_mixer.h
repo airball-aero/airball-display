@@ -20,8 +20,6 @@ public:
   explicit sound_mixer(const std::string& device_name);
   ~sound_mixer() override;
 
-  bool start();
-
   void set_layers(std::vector<ISoundLayer*> layers) override;
 
   snd_pcm_uframes_t actual_period_size() override;
@@ -36,6 +34,7 @@ public:
 private:
   unsigned int actual_rate();
 
+  bool start();
   void loop();
 
   sound_mixer(const sound_mixer&) = delete;

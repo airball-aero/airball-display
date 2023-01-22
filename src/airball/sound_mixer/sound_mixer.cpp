@@ -15,7 +15,9 @@ sound_mixer::sound_mixer(const std::string& device_name)
       handle_(nullptr),
       actual_rate_(kDesiredRate),
       actual_period_size_(kDesiredPeriodSize),
-      server_([&]() { loop(); }) {}
+      server_([&]() { loop(); }) {
+  start();
+}
 
 
 sound_mixer::~sound_mixer() {

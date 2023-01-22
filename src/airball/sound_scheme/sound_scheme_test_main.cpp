@@ -4,8 +4,7 @@
 #include <boost/format.hpp>
 #include <termios.h>
 
-#include "flyonspeed_scheme.h"
-#include "stallfence_scheme.h"
+#include "airball_sound_scheme.h"
 #include "../model/ISettings.h"
 #include "../model/IAirdata.h"
 #include "../util/units.h"
@@ -13,9 +12,14 @@
 
 constexpr double kAlphaBetaStep = 0.01;
 constexpr int kDisplayHalfSize = 20;
+constexpr double kAlphaInit = 0.5;
+constexpr double kBetaInit = 0.0;
 
 class TestSettings : public airball::ISettings {
 public:
+  TestSettings(const std::string& sound_scheme)
+      : sound_scheme_(sound_scheme) {}
+
   double v_full_scale() const override { return v_full_scale_; }
   double v_r() const override { return v_r_; }
   double v_fe() const override { return v_fe_; }
@@ -38,7 +42,7 @@ public:
   bool show_altimeter() const override { return false; }
   bool show_link_status() const override { return false; }
   bool show_probe_battery_status() const override { return false; }
-  std::string sound_scheme() const override { return ""; }
+  std::string sound_scheme() const override { return sound_scheme_; }
   double audio_volume() const override { return 1.0; }
   double alpha_max() const override { return 0; }
   bool declutter() const override { return false; }
@@ -47,6 +51,7 @@ public:
   double screen_brightness() const override { return 0.0; }
   Adjustment adjustment() const override { return ADJUSTMENT_NONE; }
 
+  std::string sound_scheme_;
   double v_full_scale_ = 0;
   double v_r_ = 0;
   double v_fe_ = 0;
@@ -108,7 +113,7 @@ void print_alpha_beta(double alpha, double beta) {
     }
   }
   std::cout << "|";
-  std::cout << " alpha = " << boost::format("%05.02d") % alpha;
+  std::cout << " alpha = " << boost::format("%05.2f") % alpha;
   std::cout << std::endl;
 }
 
@@ -118,7 +123,10 @@ int main(int argc, char**argv) {
     return -1;
   }
 
-  TestSettings settings;
+  std::string device_name(argv[1]);
+  std::string scheme_name(argv[2]);
+
+  TestSettings settings(scheme_name);
   settings.alpha_min_ = 0.0;
   settings.alpha_y_ = 0.5;
   settings.alpha_ref_ = 0.75;
@@ -130,25 +138,10 @@ int main(int argc, char**argv) {
 
   TestModel model(&settings, &airdata);
 
-  std::string device_name(argv[1]);
-  std::string scheme_name(argv[2]);
-
   airball::sound_mixer mixer(device_name);
-  std::unique_ptr<airball::airball_sound_scheme> scheme;
+  airball::airball_sound_scheme scheme;
 
-  if (scheme_name == "flyonspeed") {
-    scheme = std::make_unique<airball::flyonspeed_scheme>();
-  } else if (scheme_name == "stallfence") {
-    scheme = std::make_unique<airball::stallfence_scheme>();
-  } else {
-    std::cerr << "Unknown scheme: " << scheme_name << std::endl;
-    return -1;
-  }
-
-  if (!mixer.start()) {
-    std::cout << "Error" << std::endl;
-    return -1;
-  }
+  scheme.install(&mixer);
 
   auto set_alpha_beta = [&](double alpha, double beta) {
     print_alpha_beta(alpha, beta);
@@ -157,12 +150,12 @@ int main(int argc, char**argv) {
         degrees_to_radians(beta),
         0.0,
         0.0));
-    scheme->update(model, &mixer);
+    scheme.update(model, &mixer);
     std::this_thread::sleep_for(std::chrono::duration<double, std::milli>(10));
   };
 
-  double alpha = 10.0;
-  double beta = 0.0;
+  double alpha = kAlphaInit;
+  double beta = kBetaInit;
 
   set_alpha_beta(alpha, beta);
 

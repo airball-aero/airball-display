@@ -46,7 +46,7 @@ public:
       soundScheme_->update(*model_, soundMixer_.get());
       std::this_thread::sleep_for(frameInterval_);
     }
-    // soundScheme_->remove(soundMixer_.get());
+    soundScheme_->remove(soundMixer_.get());
   }
 
   void stop() {
