@@ -19,7 +19,7 @@ public:
            IEventQueue *eventQueue);
   virtual ~Settings();
 
-  double v_full_scale() const override;
+  double ias_full_scale() const override;
   double v_r() const override;
   double v_fe() const override;
   double v_no() const override;

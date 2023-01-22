@@ -20,7 +20,7 @@ public:
   TestSettings(const std::string& sound_scheme)
       : sound_scheme_(sound_scheme) {}
 
-  double v_full_scale() const override { return v_full_scale_; }
+  double ias_full_scale() const override { return v_full_scale_; }
   double v_r() const override { return v_r_; }
   double v_fe() const override { return v_fe_; }
   double v_no() const override { return v_no_; }

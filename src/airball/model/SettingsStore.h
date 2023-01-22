@@ -95,7 +95,7 @@ void TypedParameter<std::string>::saveImpl(rapidjson::Document &doc) const {
 
 class SettingsStore {
 public:
-  TypedParameter<double> V_FULL_SCALE {"ias_full_scale",100};
+  TypedParameter<double> IAS_FULL_SCALE {"ias_full_scale", 100};
   TypedParameter<double> V_R {"v_r", 100};
   TypedParameter<double> V_FE {"v_fe", 100};
   TypedParameter<double> V_NO {"v_no",100};
@@ -125,7 +125,7 @@ public:
   TypedParameter<double> SCREEN_BRIGHTNESS {"screen_brightness", 1.0};
 
   const std::vector<Parameter *> ALL_PARAMS = {
-      (Parameter*) &V_FULL_SCALE,
+      (Parameter*) &IAS_FULL_SCALE,
       (Parameter*) &V_R,
       (Parameter*) &V_FE,
       (Parameter*) &V_NO,

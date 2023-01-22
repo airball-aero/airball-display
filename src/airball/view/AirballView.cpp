@@ -368,7 +368,7 @@ double PaintCycle::airspeed_to_radius(const double airspeed) {
 }
 
 double PaintCycle::airspeed_display_units_to_radius(const double airspeed_display_units) {
-  double ratio = airspeed_display_units / model_.settings()->v_full_scale();
+  double ratio = airspeed_display_units / model_.settings()->ias_full_scale();
   return ratio * width_ / 2;
 }
 

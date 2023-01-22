@@ -173,8 +173,8 @@ void Settings::save() {
   f.close();
 }
 
-double Settings::v_full_scale() const {
-  return store_->V_FULL_SCALE.get();
+double Settings::ias_full_scale() const {
+  return store_->IAS_FULL_SCALE.get();
 }
 
 double Settings::v_r() const {

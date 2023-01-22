@@ -10,7 +10,7 @@ public:
   /**
    * @return the display setting, full scale indicated air speed. (Knots)
    */
-  virtual double v_full_scale() const = 0;
+  virtual double ias_full_scale() const = 0;
 
   /**
    * @return the rotation indicated air speed (Vr). (Knots)
@@ -149,7 +149,7 @@ public:
 
    enum Adjustment {
      ADJUSTMENT_NONE = 0,
-     ADJUSTMENT_V_FULL_SCAlE = 1,
+     ADJUSTMENT_IAS_FULL_SCAlE = 1,
      ADJUSTMENT_V_R = 2,
      ADJUSTMENT_V_FE = 3,
      ADJUSTMENT_V_NO = 4,
