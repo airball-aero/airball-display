@@ -122,7 +122,7 @@ Settings::Settings(const std::string& settingsFilePath,
     : path_(settingsFilePath),
       loaded_(false),
       eventQueue_(eventQueue),
-      adjustment_(ADJUSTMENT_NONE) {
+      adjustment_(nullptr) {
   settingsEventSource_ = std::make_unique<SettingsEventSource>(
           settingsFilePath,
           inputDevicePath,
@@ -286,80 +286,42 @@ double Settings::screen_brightness() const {
 }
 
 Settings::Adjustment Settings::adjustment() const {
-  return adjustment_;
+  return adjustment_ == nullptr ? ADJUSTMENT_NONE : adjustment_->adjustment();
 }
 
 void Settings::startAdjusting() {
-  if (adjustment_ == ADJUSTMENT_NONE) {
+  if (adjustment_ == nullptr) {
     if (show_altimeter()) {
-      adjustment_ = ADJUSTMENT_BARO_SETTING;
+      adjustment_ = &(store_->BARO_SETTING);
     } else {
-      adjustment_ = ADJUSTMENT_SCREEN_BRIGHTNESS;
+      adjustment_ = &(store_->SCREEN_BRIGHTNESS);
     }
   }
 }
 
 void Settings::nextAdjustment() {
-  if (adjustment_ == ADJUSTMENT_NONE) {
+  if (adjustment_ == nullptr) {
     startAdjusting();
-    return;
-  }
-  switch (adjustment_) {
-    case ISettings::ADJUSTMENT_BARO_SETTING:
-      adjustment_ = ADJUSTMENT_SCREEN_BRIGHTNESS;
-      break;
-    case ISettings::ADJUSTMENT_SCREEN_BRIGHTNESS:
-      adjustment_ = ADJUSTMENT_AUDIO_VOLUME;
-      break;
-    case ISettings::ADJUSTMENT_AUDIO_VOLUME:
-      adjustment_ = ADJUSTMENT_SHOW_ALTIMETER;
-      break;
-    case ISettings::ADJUSTMENT_SHOW_ALTIMETER:
-    default:
-      adjustment_ = ADJUSTMENT_NONE;
-      break;
+  } else if (adjustment_ == &(store_->BARO_SETTING)) {
+    adjustment_ = &(store_->SCREEN_BRIGHTNESS);
+  } else if (adjustment_ == &(store_->SCREEN_BRIGHTNESS)) {
+    adjustment_ = &(store_->AUDIO_VOLUME);
+  } else if (adjustment_ == &(store_->AUDIO_VOLUME)) {
+    adjustment_ = &(store_->SHOW_ALTIMETER);
+  } else {
+    adjustment_ = nullptr;
   }
 }
 
 void Settings::hidIncrement() {
   startAdjusting();
-  switch (adjustment_) {
-    case ISettings::ADJUSTMENT_BARO_SETTING:
-      store_->BARO_SETTING.set(store_->BARO_SETTING.get() + 0.01);
-      break;
-    case ISettings::ADJUSTMENT_SCREEN_BRIGHTNESS:
-      store_->SCREEN_BRIGHTNESS.set(std::min(store_->SCREEN_BRIGHTNESS.get() + 0.05, 1.0));
-      break;
-    case ISettings::ADJUSTMENT_AUDIO_VOLUME:
-      store_->AUDIO_VOLUME.set(std::min(store_->AUDIO_VOLUME.get() + 0.05, 1.0));
-      break;
-    case ISettings::ADJUSTMENT_SHOW_ALTIMETER:
-      store_->SHOW_ALTIMETER.set(true);
-      break;
-    default:
-      return;
-  }
+  adjustment_->hidIncrement();
   save();
 }
 
 void Settings::hidDecrement() {
   startAdjusting();
-  switch (adjustment_) {
-    case ISettings::ADJUSTMENT_BARO_SETTING:
-      store_->BARO_SETTING.set(store_->BARO_SETTING.get() - 0.01);
-      break;
-    case ISettings::ADJUSTMENT_SCREEN_BRIGHTNESS:
-      store_->SCREEN_BRIGHTNESS.set(std::max(store_->SCREEN_BRIGHTNESS.get() - 0.05, 0.0));
-      break;
-    case ISettings::ADJUSTMENT_AUDIO_VOLUME:
-      store_->AUDIO_VOLUME.set(std::max(store_->AUDIO_VOLUME.get() - 0.05, 0.0));
-      break;
-    case ISettings::ADJUSTMENT_SHOW_ALTIMETER:
-      store_->SHOW_ALTIMETER.set(false);
-      break;
-    default:
-      return;
-  }
+  adjustment_->hidDecrement();
   save();
 }
 
@@ -370,7 +332,7 @@ void Settings::hidAdjustPressed() {
 void Settings::hidAdjustReleased() {}
 
 void Settings::hidTimerExpired() {
-  adjustment_ = ADJUSTMENT_NONE;
+  adjustment_ = nullptr;
 }
 
 } // namespace airball

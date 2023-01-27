@@ -11,6 +11,7 @@ namespace airball {
 
 class SettingsEventSource;
 class SettingsStore;
+class Parameter;
 
 class Settings : public ISettings {
 public:
@@ -68,7 +69,7 @@ private:
   std::unique_ptr<SettingsEventSource> settingsEventSource_;
   std::unique_ptr<SettingsStore> store_;
   IEventQueue* eventQueue_;
-  Adjustment adjustment_;
+  Parameter* adjustment_;
 };
 
 } // namespace airball
