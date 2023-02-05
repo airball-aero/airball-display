@@ -55,7 +55,8 @@ public:
   void hidDecrement();
   void hidAdjustPressed();
   void hidAdjustReleased();
-  void hidTimerExpired();
+  void hidCancelTimerFired();
+  void hidLongPressTimerFired();
 
   void load();
   void save();

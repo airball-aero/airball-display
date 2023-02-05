@@ -24,17 +24,17 @@ public:
     saveImpl(doc);
   }
 
-  virtual std::string display_value() const = 0;
+  [[nodiscard]] virtual std::string display_value() const = 0;
 
-  std::string display_name() const { return display_name_; }
+  [[nodiscard]] std::string display_name() const { return display_name_; }
 
   ISettings::Adjustment adjustment() { return adjustment_; }
 
-  virtual void hidIncrement() = 0;
-  virtual void hidDecrement() = 0;
+  virtual void increment() = 0;
+  virtual void decrement() = 0;
 
 protected:
-  std::string json_key() const { return json_key_; }
+  [[nodiscard]] std::string json_key() const { return json_key_; }
 
   virtual void loadImpl(const rapidjson::Document &doc) = 0;
   virtual void saveImpl(rapidjson::Document &doc) const = 0;
@@ -55,9 +55,9 @@ public:
       : Parameter(json_key, display_name, adjustment),
         value_(initial) {}
 
-  T get() const { return value_; }
+  [[nodiscard]] T get() const { return value_; }
 
-  std::string display_value() const override;
+  [[nodiscard]] std::string display_value() const override;
 
 protected:
   void set(const T& value) { value_ = value; }
@@ -134,24 +134,24 @@ public:
         current_index_(initial_index),
         options_(options) {}
 
-  std::string get() const {
+  [[nodiscard]] std::string get() const {
     return options_[current_index_];
   }
 
-  std::string display_value() const override {
+  [[nodiscard]] std::string display_value() const override {
     return get();
   };
 
-  void hidIncrement() override {
+  void increment() override {
     current_index_ = (current_index_ + 1) % options_.size();
   }
 
-  void hidDecrement()  override {
+  void decrement() override {
     current_index_ = (current_index_ - 1) % options_.size();
   }
 
 protected:
-  void loadImpl(const rapidjson::Document &doc) {
+  void loadImpl(const rapidjson::Document &doc) override {
     std::string string_value = doc[json_key().c_str()].GetString();
     auto i = std::find(options_.begin(), options_.end(), string_value);
     if (i != options_.end()) {
@@ -159,11 +159,11 @@ protected:
     }
   }
 
-  void saveImpl(rapidjson::Document &doc) const {
-  doc.AddMember(
-      rapidjson::Value(json_key().c_str(), doc.GetAllocator()).Move(),
-      rapidjson::Value().SetString(options_[current_index_].c_str(), doc.GetAllocator()).Move(),
-      doc.GetAllocator());
+  void saveImpl(rapidjson::Document &doc) const override {
+    doc.AddMember(
+        rapidjson::Value(json_key().c_str(), doc.GetAllocator()).Move(),
+        rapidjson::Value().SetString(options_[current_index_].c_str(), doc.GetAllocator()).Move(),
+        doc.GetAllocator());
   }
 
 private:
@@ -179,11 +179,11 @@ public:
                 const bool& initial)
       : TypedParameter<bool>(json_key, display_name, adjustment, initial) {}
 
-  void hidIncrement() override {
+  void increment() override {
     set(!get());
   }
 
-  void hidDecrement()  override {
+  void decrement() override {
     set(!get());
   }
 };
@@ -203,11 +203,11 @@ public:
         max_(max),
         increment_(increment) {}
 
-  void hidIncrement() override {
+  void increment() override {
     TypedParameter<T>::set(clamp(this->get() + increment_));
   }
 
-  void hidDecrement() override {
+  void decrement() override {
     TypedParameter<T>::set(clamp(this->get() - increment_));
   }
 
@@ -224,94 +224,146 @@ private:
   const T increment_;
 };
 
+class SpeedParameter : public NumericParameter<double> {
+public:
+  SpeedParameter(const StringSelectionParameter *speed_units,
+                 const std::string &json_key,
+                 const std::string &display_name,
+                 ISettings::Adjustment adjustment,
+                 const double &initial,
+                 const double &min,
+                 const double &max,
+                 const double &increment)
+      : NumericParameter<double>(json_key, display_name, adjustment, initial, min, max, increment),
+        speed_units_(speed_units) {}
+
+  [[nodiscard]] std::string display_value() const override {
+    return str(boost::format("%s %s") %
+               NumericParameter < double > ::display_value() %
+                                           speed_units_->get());
+  }
+
+private:
+  const StringSelectionParameter* speed_units_;
+};
+
+class AngleParameter : public NumericParameter<double> {
+public:
+  AngleParameter(const std::string &json_key,
+                 const std::string &display_name,
+                 ISettings::Adjustment adjustment,
+                 const double &initial,
+                 const double &min,
+                 const double &max,
+                 const double &increment)
+      : NumericParameter<double>(json_key, display_name, adjustment, initial, min, max, increment) {}
+
+  [[nodiscard]] std::string display_value() const override {
+    return str(boost::format("%s °") %
+               NumericParameter < double > ::display_value());
+  }
+};
+
 class SettingsStore {
 public:
-  NumericParameter<double> IAS_FULL_SCALE {
+  StringSelectionParameter SPEED_UNITS {
+    "speed_units",
+    "SPD",
+    ISettings::ADJUSTMENT_SPEED_UNITS,
+    {"knots", "mph"},
+    0,
+  };
+  SpeedParameter IAS_FULL_SCALE {
+    &SPEED_UNITS,
     "ias_full_scale",
     "V_FS",
     ISettings::ADJUSTMENT_IAS_FULL_SCAlE,
     100, 0, 300, 1,
   };
-  NumericParameter<double> V_R {
+  SpeedParameter V_R {
+    &SPEED_UNITS,
     "v_r",
     "V_R",
     ISettings::ADJUSTMENT_V_R,
     50, 0, 300, 1,
   };
-  NumericParameter<double> V_FE {
+  SpeedParameter V_FE {
+    &SPEED_UNITS,
     "v_fe",
     "V_FE",
     ISettings::ADJUSTMENT_V_FE,
     75, 0, 300, 1,
   };
-  NumericParameter<double> V_NO {
+  SpeedParameter V_NO {
+    &SPEED_UNITS,
     "v_no",
     "V_NO",
     ISettings::ADJUSTMENT_V_NO,
     100, 0, 300, 1,
   };
-  NumericParameter<double> V_NE {
+  SpeedParameter V_NE {
+    &SPEED_UNITS,
     "v_ne",
     "V_NE",
     ISettings::ADJUSTMENT_V_NE,
     100, 0, 300, 1,
   };
-  NumericParameter<double> ALPHA_STALL {
+  AngleParameter ALPHA_STALL {
     "alpha_stall",
     "α_CRIT",
     ISettings::ADJUSTMENT_ALPHA_STALL,
     15.0, -10.0, 30.0, 0.1,
   };
-  NumericParameter<double> ALPHA_STALL_WARNING {
+  AngleParameter ALPHA_STALL_WARNING {
     "alpha_stall_warning",
     "α_CRIT_W",
     ISettings::ADJUSTMENT_ALPHA_STALL_WARNING,
     14.0,
     -10.0, 30.0, 0.1,
   };
-  NumericParameter<double> ALPHA_MIN {
+  AngleParameter ALPHA_MIN {
     "alpha_min",
     "α_MIN",
     ISettings::ADJUSTMENT_ALPHA_MIN,
     -10.0,
     -10.0, 30.0, 0.1,
   };
-  NumericParameter<double> ALPHA_MAX {
+  AngleParameter ALPHA_MAX {
     "alpha_max",
     "α_MAX",
     ISettings::ADJUSTMENT_ALPHA_MAX,
     20.0,
     -10.0, 30.0, 0.1,
   };
-  NumericParameter<double> ALPHA_X {
+  AngleParameter ALPHA_X {
     "alpha_x",
     "α_X",
     ISettings::ADJUSTMENT_ALPHA_X,
     12.0,
     -10.0, 30.0, 0.1,
   };
-  NumericParameter<double> ALPHA_Y {
+  AngleParameter ALPHA_Y {
     "alpha_y",
     "α_Y",
     ISettings::ADJUSTMENT_ALPHA_X,
     10.0,
     -10.0, 30.0, 0.1,
   };
-  NumericParameter<double> ALPHA_REF {
+  AngleParameter ALPHA_REF {
     "alpha_ref",
     "α_REF",
     ISettings::ADJUSTMENT_ALPHA_REF,
     14.0,
     -10.0, 30.0, 0.1,
   };
-  NumericParameter<double> BETA_FULL_SCALE {
+  AngleParameter BETA_FULL_SCALE {
     "beta_full_scale",
     "β_FS",
     ISettings::ADJUSTMENT_BETA_FULL_SCALE,
     20.0,
     0, 30.0, 5,
   };
-  NumericParameter<double> BETA_BIAS {
+  AngleParameter BETA_BIAS {
     "beta_bias",
     "β BIAS",
     ISettings::ADJUSTMENT_BETA_BIAS,
@@ -390,13 +442,6 @@ public:
     ISettings::ADJUSTMENT_AUDIO_VOLUME,
     1.0,
     0, 1.0, 0.05,
-  };
-  StringSelectionParameter SPEED_UNITS {
-    "speed_units",
-    "SPD",
-    ISettings::ADJUSTMENT_SPEED_UNITS,
-    {"knots", "mph"},
-    0,
   };
   BoolParameter ROTATE_SCREEN {
     "rotate_screen",

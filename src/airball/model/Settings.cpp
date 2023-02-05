@@ -19,7 +19,8 @@
 
 namespace airball {
 
-const auto kInputDelay = std::chrono::milliseconds(5000);
+const auto kCancelDelay = std::chrono::milliseconds(5000);
+const auto kLongPressDelay = std::chrono::milliseconds (2000);
 
 // A SettingsEventSource handles all the asynchronous operations to listen for HID
 // events from input devices, timeouts, and all that stuff. It is responsible for
@@ -27,10 +28,10 @@ const auto kInputDelay = std::chrono::milliseconds(5000);
 // the Settings code can stop worrying and just focus on its main job.
 class SettingsEventSource {
 public:
-  SettingsEventSource(const std::string& settingsFilePath,
-                      const std::string& inputDevicePath,
-                      IEventQueue* eventQueue,
-                      Settings* settings)
+  SettingsEventSource(const std::string &settingsFilePath,
+                      const std::string &inputDevicePath,
+                      IEventQueue *eventQueue,
+                      Settings *settings)
       : settingsFilePath_(settingsFilePath),
         inputDevicePath_(inputDevicePath),
         eventQueue_(eventQueue),
@@ -39,7 +40,7 @@ public:
       file_write_watch w(settingsFilePath_);
       while (true) {
         w.next_event();
-        eventQueue_->enqueue([&](){ settings_->load(); });
+        eventQueue_->enqueue([&]() { settings_->load(); });
       }
     });
     if (!inputDevicePath_.empty()) {
@@ -47,7 +48,7 @@ public:
         while (true) {
           int f = open(inputDevicePath_.c_str(), O_RDONLY);
           if (f < 0) {
-            std::this_thread::sleep_for(kInputDelay);
+            std::this_thread::sleep_for(kCancelDelay);
             continue;
           }
           input_event e = {0};
@@ -72,10 +73,12 @@ public:
                       case 0:
                         eventQueue_->enqueue([this]() { settings_->hidAdjustReleased(); });
                         restartCancelTimer();
+                        stopLongPressTimer();
                         break;
                       case 1:
                         eventQueue_->enqueue([this]() { settings_->hidAdjustPressed(); });
                         restartCancelTimer();
+                        restartLongPressTimer();
                         break;
                       default:
                         break;
@@ -96,11 +99,23 @@ public:
 
   void restartCancelTimer() {
     std::lock_guard<std::mutex> lock(cancelTimerMu_);
-    cancelTimer_.reset(new OneShotTimer(kInputDelay, [this]() {
+    cancelTimer_.reset(new OneShotTimer(kCancelDelay, [this]() {
       eventQueue_->enqueue([this]() {
-        settings_->hidTimerExpired();
+        settings_->hidCancelTimerFired();
       });
     }));
+  }
+
+  void restartLongPressTimer() {
+    longPressTimer_.reset(new OneShotTimer(kLongPressDelay, [this]() {
+      eventQueue_->enqueue([this]() {
+        settings_->hidLongPressTimerFired();
+      });
+    }));
+  }
+
+  void stopLongPressTimer() {
+    longPressTimer_.reset(nullptr);
   }
 
 private:
@@ -114,6 +129,7 @@ private:
 
   std::mutex cancelTimerMu_;
   std::unique_ptr<OneShotTimer> cancelTimer_;
+  std::unique_ptr<OneShotTimer> longPressTimer_;
 };
 
 Settings::Settings(const std::string& settingsFilePath,
@@ -315,13 +331,13 @@ void Settings::nextAdjustment() {
 
 void Settings::hidIncrement() {
   startAdjusting();
-  adjustment_->hidIncrement();
+  adjustment_->increment();
   save();
 }
 
 void Settings::hidDecrement() {
   startAdjusting();
-  adjustment_->hidDecrement();
+  adjustment_->decrement();
   save();
 }
 
@@ -331,8 +347,12 @@ void Settings::hidAdjustPressed() {
 
 void Settings::hidAdjustReleased() {}
 
-void Settings::hidTimerExpired() {
+void Settings::hidCancelTimerFired() {
   adjustment_ = nullptr;
+}
+
+void Settings::hidLongPressTimerFired() {
+  // ??????
 }
 
 } // namespace airball
