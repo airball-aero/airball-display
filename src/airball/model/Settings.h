@@ -62,15 +62,21 @@ public:
   void save();
 
 private:
-  void startAdjusting();
+  void startAdjustingShallow();
   void nextAdjustment();
+
+  void buildParamsVectors();
 
   std::string path_;
   bool loaded_;
   std::unique_ptr<SettingsEventSource> settingsEventSource_;
   std::unique_ptr<SettingsStore> store_;
   IEventQueue* eventQueue_;
-  Parameter* adjustment_;
+
+  std::vector<Parameter*> adjustmentParamsShallow_;
+  std::vector<Parameter*> adjustmentParamsDeep_;
+  std::vector<Parameter*>* currentAdjustingVector_;
+  size_t currentAdjustingIndex_;
 };
 
 } // namespace airball

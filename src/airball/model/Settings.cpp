@@ -141,14 +141,51 @@ Settings::Settings(const std::string& settingsFilePath,
     : path_(settingsFilePath),
       loaded_(false),
       eventQueue_(eventQueue),
-      adjustment_(nullptr) {
+      currentAdjustingVector_(nullptr),
+      currentAdjustingIndex_(0) {
   settingsEventSource_ = std::make_unique<SettingsEventSource>(
           settingsFilePath,
           inputDevicePath,
           eventQueue,
           this);
   store_ = std::make_unique<SettingsStore>();
+  buildParamsVectors();
   load();
+}
+
+void Settings::buildParamsVectors() {
+  adjustmentParamsShallow_.clear();
+  if (store_->SHOW_ALTIMETER.get()) {
+    adjustmentParamsShallow_.push_back(&store_->BARO_SETTING);
+  }
+  adjustmentParamsShallow_.push_back(&store_->SCREEN_BRIGHTNESS);
+  adjustmentParamsShallow_.push_back(&store_->AUDIO_VOLUME);
+  adjustmentParamsShallow_.push_back(&store_->SHOW_ALTIMETER);
+
+  adjustmentParamsDeep_ = {
+    &store_->IAS_FULL_SCALE,
+    &store_->V_R,
+    &store_->V_FE,
+    &store_->V_NO,
+    &store_->V_NE,
+    &store_->ALPHA_STALL,
+    &store_->ALPHA_STALL_WARNING,
+    &store_->ALPHA_MIN,
+    &store_->ALPHA_MAX,
+    &store_->ALPHA_X,
+    &store_->ALPHA_Y,
+    &store_->ALPHA_REF,
+    &store_->BETA_FULL_SCALE,
+    &store_->BETA_BIAS,
+    &store_->BALL_SMOOTHING_FACTOR,
+    &store_->VSI_SMOOTHING_FACTOR,
+    &store_->DECLUTTER,
+    &store_->SOUND_SCHEME,
+    &store_->SPEED_UNITS,
+  };
+  if (currentAdjustingVector_ != nullptr) {
+    currentAdjustingIndex_ = std::min(currentAdjustingIndex_, currentAdjustingVector_->size());
+  }
 }
 
 Settings::~Settings() {}
@@ -314,42 +351,37 @@ double Settings::screen_brightness() const {
 }
 
 Settings::Adjustment Settings::adjustment() const {
-  return adjustment_ == nullptr ? ADJUSTMENT_NONE : adjustment_->adjustment();
+  return (currentAdjustingVector_ == nullptr)
+         ? ADJUSTMENT_NONE
+         : (*currentAdjustingVector_)[currentAdjustingIndex_]->adjustment();
 }
 
-void Settings::startAdjusting() {
-  if (adjustment_ == nullptr) {
-    if (show_altimeter()) {
-      adjustment_ = &(store_->BARO_SETTING);
-    } else {
-      adjustment_ = &(store_->SCREEN_BRIGHTNESS);
-    }
+void Settings::startAdjustingShallow() {
+  if (currentAdjustingVector_ == nullptr) {
+    currentAdjustingVector_ = &adjustmentParamsShallow_;
+    currentAdjustingIndex_ = 0;
   }
 }
 
 void Settings::nextAdjustment() {
-  if (adjustment_ == nullptr) {
-    startAdjusting();
-  } else if (adjustment_ == &(store_->BARO_SETTING)) {
-    adjustment_ = &(store_->SCREEN_BRIGHTNESS);
-  } else if (adjustment_ == &(store_->SCREEN_BRIGHTNESS)) {
-    adjustment_ = &(store_->AUDIO_VOLUME);
-  } else if (adjustment_ == &(store_->AUDIO_VOLUME)) {
-    adjustment_ = &(store_->SHOW_ALTIMETER);
+  if (currentAdjustingVector_ == nullptr) {
+    startAdjustingShallow();
   } else {
-    adjustment_ = nullptr;
+    currentAdjustingIndex_ = (currentAdjustingIndex_ + 1) % currentAdjustingVector_->size();
   }
 }
 
 void Settings::hidIncrement() {
-  startAdjusting();
-  adjustment_->increment();
+  startAdjustingShallow();
+  (*currentAdjustingVector_)[currentAdjustingIndex_]->increment();
+  buildParamsVectors();
   save();
 }
 
 void Settings::hidDecrement() {
-  startAdjusting();
-  adjustment_->decrement();
+  startAdjustingShallow();
+  (*currentAdjustingVector_)[currentAdjustingIndex_]->decrement();
+  buildParamsVectors();
   save();
 }
 
@@ -360,11 +392,18 @@ void Settings::hidAdjustPressed() {
 void Settings::hidAdjustReleased() {}
 
 void Settings::hidCancelTimerFired() {
-  adjustment_ = nullptr;
+  currentAdjustingVector_ = nullptr;
+  currentAdjustingIndex_ = 0;
 }
 
 void Settings::hidLongPressTimerFired() {
-  // ??????
+  if (currentAdjustingVector_ == nullptr || currentAdjustingVector_ == &adjustmentParamsShallow_) {
+    currentAdjustingVector_ = &adjustmentParamsDeep_;
+    currentAdjustingIndex_ = 0;
+  } else if (currentAdjustingVector_ == &adjustmentParamsDeep_) {
+    currentAdjustingVector_ = &adjustmentParamsShallow_;
+    currentAdjustingIndex_ = 0;
+  }
 }
 
 } // namespace airball
