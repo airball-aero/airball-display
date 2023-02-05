@@ -183,6 +183,7 @@ void Settings::buildParamsVectors() {
     &store_->SOUND_SCHEME,
     &store_->SPEED_UNITS,
   };
+
   if (currentAdjustingVector_ != nullptr) {
     currentAdjustingIndex_ = std::min(currentAdjustingIndex_, currentAdjustingVector_->size());
   }
