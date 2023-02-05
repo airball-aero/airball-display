@@ -4,6 +4,7 @@
 #include <fstream>
 #include <sstream>
 #include <fcntl.h>
+#include <stdlib.h>
 #include <unistd.h>
 
 #include <linux/input.h>
@@ -21,6 +22,8 @@ namespace airball {
 
 const auto kCancelDelay = std::chrono::milliseconds(5000);
 const auto kLongPressDelay = std::chrono::milliseconds (2000);
+
+const std::string kTempFileTemplate("airball-settings.json.XXXXXX");
 
 // A SettingsEventSource handles all the asynchronous operations to listen for HID
 // events from input devices, timeouts, and all that stuff. It is responsible for
@@ -182,11 +185,20 @@ void Settings::save() {
   rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(buffer);
   d.Accept(writer);
 
+  char tempFileName[kTempFileTemplate.length()];
+  strcpy(tempFileName, kTempFileTemplate.c_str());
+
+  if (mktemp(tempFileName) == nullptr) {
+    return;
+  }
+
   std::ofstream f;
-  f.open(path_);
+  f.open(tempFileName);
   f << buffer.GetString();
   f.flush();
   f.close();
+
+  rename(tempFileName, path_.c_str());
 }
 
 double Settings::ias_full_scale() const {
