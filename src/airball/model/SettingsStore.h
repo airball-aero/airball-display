@@ -180,11 +180,15 @@ public:
       : TypedParameter<bool>(json_key, display_name, adjustment, initial) {}
 
   void increment() override {
-    set(!get());
+    if (!get()) {
+      set(true);
+    }
   }
 
   void decrement() override {
-    set(!get());
+    if (get()) {
+      set(false);
+    }
   }
 };
 

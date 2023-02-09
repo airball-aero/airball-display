@@ -51,6 +51,9 @@ public:
 
   Adjustment adjustment() const override;
 
+  std::string adjustmentDisplayName() const override;
+  std::string adjustmentDisplayValue() const override;
+
   void hidIncrement();
   void hidDecrement();
   void hidAdjustPressed();

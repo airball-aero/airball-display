@@ -1176,28 +1176,17 @@ void PaintCycle::paintAdjusting() {
   if (model_.settings()->adjustment() == ISettings::ADJUSTMENT_NONE) {
     return;
   }
-  std::stringstream buf;
-  buf << "ADJ: ";
-  switch (model_.settings()->adjustment()) {
-    case ISettings::ADJUSTMENT_AUDIO_VOLUME:
-      buf << "VOL";
-      break;
-    case ISettings::ADJUSTMENT_BARO_SETTING:
-      buf << "BARO";
-      break;
-    case ISettings::ADJUSTMENT_SCREEN_BRIGHTNESS:
-      buf << "BRT";
-      break;
-    case ISettings::ADJUSTMENT_SHOW_ALTIMETER:
-      buf << "ALT?";
-      break;
-    default:
-      return;
-  }
   draw_text(
       screen_->cr(),
-      buf.str(),
+      model_.settings()->adjustmentDisplayName(),
       Point(width_ - statusRegionMargin_, statusRegionMargin_),
+      TextReferencePoint ::TOP_RIGHT,
+      statusTextFont_,
+      statusTextColor_);
+  draw_text(
+      screen_->cr(),
+      model_.settings()->adjustmentDisplayValue(),
+      Point(width_ - statusRegionMargin_, statusRegionMargin_ + statusTextFont_.size() * 1.25),
       TextReferencePoint ::TOP_RIGHT,
       statusTextFont_,
       statusTextColor_);

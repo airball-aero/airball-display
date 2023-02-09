@@ -357,6 +357,20 @@ Settings::Adjustment Settings::adjustment() const {
          : (*currentAdjustingVector_)[currentAdjustingIndex_]->adjustment();
 }
 
+std::string Settings::adjustmentDisplayName() const  {
+  if (currentAdjustingVector_ == nullptr) {
+    return "";
+  }
+  return (*currentAdjustingVector_)[currentAdjustingIndex_]->display_name();
+}
+
+std::string Settings::adjustmentDisplayValue() const {
+  if (currentAdjustingVector_ == nullptr) {
+    return "";
+  }
+  return (*currentAdjustingVector_)[currentAdjustingIndex_]->display_value();
+}
+
 void Settings::startAdjustingShallow() {
   if (currentAdjustingVector_ == nullptr) {
     currentAdjustingVector_ = &adjustmentParamsShallow_;

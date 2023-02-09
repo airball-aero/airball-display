@@ -177,6 +177,9 @@ public:
    };
 
   virtual Adjustment adjustment() const = 0;
+
+  virtual std::string adjustmentDisplayName() const = 0;
+  virtual std::string adjustmentDisplayValue() const = 0;
 };
 
 } // namespace airball
