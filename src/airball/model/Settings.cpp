@@ -407,8 +407,10 @@ void Settings::hidAdjustPressed() {
 void Settings::hidAdjustReleased() {}
 
 void Settings::hidCancelTimerFired() {
-  currentAdjustingVector_ = nullptr;
-  currentAdjustingIndex_ = 0;
+  if (currentAdjustingVector_ == &adjustmentParamsShallow_) {
+    currentAdjustingVector_ = nullptr;
+    currentAdjustingIndex_ = 0;
+  }
 }
 
 void Settings::hidLongPressTimerFired() {

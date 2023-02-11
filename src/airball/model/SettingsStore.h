@@ -143,11 +143,11 @@ public:
   };
 
   void increment() override {
-    current_index_ = (current_index_ + 1) % options_.size();
+    current_index_ = std::min((current_index_ + 1), options_.size());
   }
 
   void decrement() override {
-    current_index_ = (current_index_ - 1) % options_.size();
+    current_index_ = std::max((current_index_ - 1), options_.size());
   }
 
 protected:
