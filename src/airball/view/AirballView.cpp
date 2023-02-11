@@ -1176,6 +1176,18 @@ void PaintCycle::paintAdjusting() {
   if (model_.settings()->adjustment() == ISettings::ADJUSTMENT_NONE) {
     return;
   }
+  double rectHeight =
+    statusTextFont_.size() * 2.25 +
+    statusRegionMargin_ * 2;
+  double rectWidth =
+    std::max(text_size(screen_->cr(), model_.settings()->adjustmentDisplayName(), statusTextFont_).w(),
+	     text_size(screen_->cr(), model_.settings()->adjustmentDisplayValue(), statusTextFont_).w()) +
+    statusRegionMargin_ * 2;
+  rectangle(
+      screen_->cr(),
+      Point(width_ - rectWidth, 0),
+      Size(rectWidth, rectHeight),
+      Color(0, 0, 0, 0.375));
   draw_text(
       screen_->cr(),
       model_.settings()->adjustmentDisplayName(),
