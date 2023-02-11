@@ -45,8 +45,8 @@ Airdata::~Airdata() {
 
 static double
 smooth(double current_value, double new_value, double smoothing_factor) {
-  return (smoothing_factor * new_value) +
-         ((1.0 - smoothing_factor) * current_value);
+  return ((1.0 - smoothing_factor) * new_value) +
+         (smoothing_factor * current_value);
 }
 
 static int computeClimbRateFilterSize(double vsi_smoothing_factor) {
