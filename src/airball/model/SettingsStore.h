@@ -201,11 +201,13 @@ public:
                    const T &initial,
                    const T &min,
                    const T &max,
-                   const T &increment)
+                   const T &increment,
+                   const std::string& format)
       : TypedParameter<T>(json_key, display_name, adjustment, initial),
         min_(min),
         max_(max),
-        increment_(increment) {}
+        increment_(increment),
+        format_(format) {}
 
   void increment() override {
     TypedParameter<T>::set(clamp(this->get() + increment_));
@@ -213,6 +215,10 @@ public:
 
   void decrement() override {
     TypedParameter<T>::set(clamp(this->get() - increment_));
+  }
+
+  [[nodiscard]] std::string display_value() const override {
+    return str(boost::format(format_) % this->get());
   }
 
 private:
@@ -226,6 +232,7 @@ private:
   const T min_;
   const T max_;
   const T increment_;
+  const std::string format_;
 };
 
 class SpeedParameter : public NumericParameter<double> {
@@ -237,8 +244,9 @@ public:
                  const double &initial,
                  const double &min,
                  const double &max,
-                 const double &increment)
-      : NumericParameter<double>(json_key, display_name, adjustment, initial, min, max, increment),
+                 const double &increment,
+                 const std::string& format)
+      : NumericParameter<double>(json_key, display_name, adjustment, initial, min, max, increment, format),
         speed_units_(speed_units) {}
 
   [[nodiscard]] std::string display_value() const override {
@@ -259,8 +267,9 @@ public:
                  const double &initial,
                  const double &min,
                  const double &max,
-                 const double &increment)
-      : NumericParameter<double>(json_key, display_name, adjustment, initial, min, max, increment) {}
+                 const double &increment,
+                 const std::string& format)
+      : NumericParameter<double>(json_key, display_name, adjustment, initial, min, max, increment, format) {}
 
   [[nodiscard]] std::string display_value() const override {
     return str(boost::format("%s °") %
@@ -283,6 +292,7 @@ public:
     "V_FS",
     ISettings::ADJUSTMENT_IAS_FULL_SCAlE,
     100, 0, 300, 1,
+    "%3.0f",
   };
   SpeedParameter V_R {
     &SPEED_UNITS,
@@ -290,6 +300,7 @@ public:
     "V_R",
     ISettings::ADJUSTMENT_V_R,
     50, 0, 300, 1,
+    "%3.0f",
   };
   SpeedParameter V_FE {
     &SPEED_UNITS,
@@ -297,6 +308,7 @@ public:
     "V_FE",
     ISettings::ADJUSTMENT_V_FE,
     75, 0, 300, 1,
+    "%3.0f",
   };
   SpeedParameter V_NO {
     &SPEED_UNITS,
@@ -304,6 +316,7 @@ public:
     "V_NO",
     ISettings::ADJUSTMENT_V_NO,
     100, 0, 300, 1,
+    "%3.0f",
   };
   SpeedParameter V_NE {
     &SPEED_UNITS,
@@ -311,12 +324,14 @@ public:
     "V_NE",
     ISettings::ADJUSTMENT_V_NE,
     100, 0, 300, 1,
+    "%3.0f",
   };
   AngleParameter ALPHA_STALL {
     "alpha_stall",
     "α_CRIT",
     ISettings::ADJUSTMENT_ALPHA_STALL,
     15.0, -10.0, 30.0, 0.1,
+    "%4.1f",
   };
   AngleParameter ALPHA_STALL_WARNING {
     "alpha_stall_warning",
@@ -324,6 +339,7 @@ public:
     ISettings::ADJUSTMENT_ALPHA_STALL_WARNING,
     14.0,
     -10.0, 30.0, 0.1,
+    "%4.1f",
   };
   AngleParameter ALPHA_MIN {
     "alpha_min",
@@ -331,6 +347,7 @@ public:
     ISettings::ADJUSTMENT_ALPHA_MIN,
     -10.0,
     -10.0, 30.0, 0.1,
+    "%4.1f",
   };
   AngleParameter ALPHA_MAX {
     "alpha_max",
@@ -338,6 +355,7 @@ public:
     ISettings::ADJUSTMENT_ALPHA_MAX,
     20.0,
     -10.0, 30.0, 0.1,
+    "%4.1f",
   };
   AngleParameter ALPHA_X {
     "alpha_x",
@@ -345,6 +363,7 @@ public:
     ISettings::ADJUSTMENT_ALPHA_X,
     12.0,
     -10.0, 30.0, 0.1,
+    "%4.1f",
   };
   AngleParameter ALPHA_Y {
     "alpha_y",
@@ -352,6 +371,7 @@ public:
     ISettings::ADJUSTMENT_ALPHA_X,
     10.0,
     -10.0, 30.0, 0.1,
+    "%4.1f",
   };
   AngleParameter ALPHA_REF {
     "alpha_ref",
@@ -359,6 +379,7 @@ public:
     ISettings::ADJUSTMENT_ALPHA_REF,
     14.0,
     -10.0, 30.0, 0.1,
+    "%4.1f",
   };
   AngleParameter BETA_FULL_SCALE {
     "beta_full_scale",
@@ -366,6 +387,7 @@ public:
     ISettings::ADJUSTMENT_BETA_FULL_SCALE,
     20.0,
     0, 30.0, 5,
+    "%4.1f",
   };
   AngleParameter BETA_BIAS {
     "beta_bias",
@@ -373,6 +395,7 @@ public:
     ISettings::ADJUSTMENT_BETA_BIAS,
     0.0,
     0, 30.0, 0.1,
+    "%4.1f",
   };
   NumericParameter<double> BARO_SETTING {
     "baro_setting",
@@ -380,6 +403,7 @@ public:
     ISettings::ADJUSTMENT_BARO_SETTING,
     29.92,
     25, 35, 0.01,
+    "%5.2f",
   };
   NumericParameter<double> BALL_SMOOTHING_FACTOR {
     "ball_smoothing_factor",
@@ -387,6 +411,7 @@ public:
     ISettings::ADJUSTMENT_BALL_SMOOTHING_FACTOR,
     1.0,
     0.0, 1.0, 0.01,
+    "%4.2f",
   };
   NumericParameter<double> VSI_SMOOTHING_FACTOR {
     "vsi_smoothing_factor",
@@ -394,6 +419,7 @@ public:
     ISettings::ADJUSTMENT_VSI_SMOOTHING_FACTOR,
     1.0,
     0.0, 1.0, 0.01,
+    "%4.2f",
   };
   NumericParameter<int> SCREEN_WIDTH {
     "screen_width",
@@ -401,6 +427,7 @@ public:
     ISettings::ADJUSTMENT_NONE,
     272,
     272, 272, 0,
+    "%d",
   };
   NumericParameter<int> SCREEN_HEIGHT {
     "screen_height",
@@ -408,6 +435,7 @@ public:
     ISettings::ADJUSTMENT_NONE,
     480,
     480, 480, 0,
+    "%d",
   };
   BoolParameter SHOW_ALTIMETER {
     "show_altimeter",
@@ -446,6 +474,7 @@ public:
     ISettings::ADJUSTMENT_AUDIO_VOLUME,
     1.0,
     0, 1.0, 0.05,
+    "%4.2f",
   };
   BoolParameter ROTATE_SCREEN {
     "rotate_screen",
@@ -459,6 +488,7 @@ public:
     ISettings::ADJUSTMENT_SCREEN_BRIGHTNESS,
     1.0,
     0, 1.0, 0.05,
+    "%4.2f",
   };
 
   const std::vector<Parameter *> ALL_PARAMS = {
