@@ -1148,12 +1148,12 @@ void PaintCycle::paintNoFlightData() {
   line(
       screen_->cr(),
       Point(0, 0),
-      Point(width_, airballHeight_),
+      Point(width_, height_),
       noFlightDataStroke_);
   line(
       screen_->cr(),
       Point(width_, 0),
-      Point(0, airballHeight_),
+      Point(0, height_),
       noFlightDataStroke_);
 }
 
