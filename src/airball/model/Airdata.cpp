@@ -11,6 +11,9 @@ constexpr int kClimbRateFilterSizeMin = 1;
 constexpr int kClimbRateFilterSizeMax = 100;
 constexpr double kSamplesPerSecond = 20;
 
+constexpr static std::chrono::milliseconds
+    kAirdataExpiryPeriod(250);
+
 Airdata::Airdata(IEventQueue* eventQueue,
                  std::unique_ptr<ITelemetry> telemetry,
                  ISettings* settings)
@@ -111,6 +114,13 @@ void Airdata::update(
   altitude_ = pressure_to_altitude(t, p, qnh);
 
   valid_ = !isnan(alpha) && !isnan(beta);
+  lastUpdateTime_ = std::chrono::system_clock::now();
+}
+
+bool Airdata::valid() const {
+  return
+      valid_ &&
+      (std::chrono::system_clock::now() - lastUpdateTime_) < kAirdataExpiryPeriod;
 }
 
 } // namespace airball

@@ -19,9 +19,10 @@ public:
 
   ~Airdata();
 
+  [[nodiscard]] bool valid() const override;
+
   [[nodiscard]] double altitude() const override { return altitude_; }
   [[nodiscard]] double climb_rate() const override { return climb_rate_; }
-  [[nodiscard]] bool valid() const override { return valid_; }
   [[nodiscard]] const Ball& smooth_ball() const override { return smooth_ball_; }
   [[nodiscard]] const std::vector<Ball>& raw_balls() const override { return raw_balls_; }
 
@@ -47,6 +48,7 @@ private:
   ISettings* settings_;
 
   bool valid_;
+  std::chrono::system_clock::time_point lastUpdateTime_;
 
   Ball smooth_ball_;
   std::vector<Ball> raw_balls_;
