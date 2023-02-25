@@ -394,8 +394,6 @@ void PaintCycle::paint() {
   if (model_.airdata()->valid()) {
     paintRawAirballs();
     paintSmoothAirball();
-  } else {
-    paintNoFlightData();
   }
 
   paintTotemPole();
@@ -413,6 +411,10 @@ void PaintCycle::paint() {
     cairo_restore(screen_->cr());
   }
 
+  if (!model_.airdata()->valid()) {
+    paintNoFlightData();
+  }
+  
   // cairo_restore(screen_->cr());
 
   cairo_surface_flush(screen_->cs());
