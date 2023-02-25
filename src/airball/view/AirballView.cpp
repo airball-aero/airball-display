@@ -115,6 +115,7 @@ private:
   double alphaRefBotAngle1_;
   double totemPoleAlphaUnit_;
   double statusRegionMargin_;
+  double adjustingRegionMargin_;
   int numCowCatcherLines_;
   Color background_;
   Color airballFill_;
@@ -140,6 +141,8 @@ private:
   Stroke noFlightDataStroke_;
   Font statusTextFont_;
   Color statusTextColor_;
+  Font adjustingTextFont_;
+  Color adjustingTextColor_;
   Color linkColor_;
   double vsiHeight_;
   std::vector<VsiStep> vsiStepsFpm_;
@@ -274,6 +277,9 @@ void PaintCycle::layout() {
   statusTextFont_ = Font(fontName_, 12);
   statusTextColor_ = Color(255, 255, 255);
 
+  adjustingTextFont_ = Font(fontName_, 24);
+  adjustingTextColor_ = Color(255, 255, 255);
+
   linkColor_ = Color(0, 180, 180);
 
   vsiHeight_ = altimeterHeight_ - 2 * displayMargin_;
@@ -325,6 +331,7 @@ void PaintCycle::layout() {
   altimeterNumberGap_ = 7;
 
   statusRegionMargin_ = 5;
+  adjustingRegionMargin_ = 10;
 
   baroLeftOffset_ =
       width_ / 12;
@@ -1179,12 +1186,12 @@ void PaintCycle::paintAdjusting() {
     return;
   }
   double rectHeight =
-    statusTextFont_.size() * 2.25 +
-    statusRegionMargin_ * 2;
+    adjustingTextFont_.size() * 2.25 +
+    adjustingRegionMargin_ * 2;
   double rectWidth =
-    std::max(text_size(screen_->cr(), model_.settings()->adjustmentDisplayName(), statusTextFont_).w(),
-	     text_size(screen_->cr(), model_.settings()->adjustmentDisplayValue(), statusTextFont_).w()) +
-    statusRegionMargin_ * 2;
+    std::max(text_size(screen_->cr(), model_.settings()->adjustmentDisplayName(), adjustingTextFont_).w(),
+	     text_size(screen_->cr(), model_.settings()->adjustmentDisplayValue(), adjustingTextFont_).w()) +
+    adjustingRegionMargin_ * 2;
   rectangle(
       screen_->cr(),
       Point(width_ - rectWidth, 0),
@@ -1193,17 +1200,17 @@ void PaintCycle::paintAdjusting() {
   draw_text(
       screen_->cr(),
       model_.settings()->adjustmentDisplayName(),
-      Point(width_ - statusRegionMargin_, statusRegionMargin_),
+      Point(width_ - adjustingRegionMargin_, adjustingRegionMargin_),
       TextReferencePoint ::TOP_RIGHT,
-      statusTextFont_,
-      statusTextColor_);
+      adjustingTextFont_,
+      adjustingTextColor_);
   draw_text(
       screen_->cr(),
       model_.settings()->adjustmentDisplayValue(),
-      Point(width_ - statusRegionMargin_, statusRegionMargin_ + statusTextFont_.size() * 1.25),
+      Point(width_ - adjustingRegionMargin_, adjustingRegionMargin_ + adjustingTextFont_.size() * 1.25),
       TextReferencePoint ::TOP_RIGHT,
-      statusTextFont_,
-      statusTextColor_);
+      adjustingTextFont_,
+      adjustingTextColor_);
 }
 
 } // namespace airball
