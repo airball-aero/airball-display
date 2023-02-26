@@ -120,7 +120,7 @@ void TypedParameter<bool>::saveImpl(rapidjson::Document &doc) const {
 
 template<>
 std::string TypedParameter<bool>::display_value() const {
-  return get() ? "true" : "false";
+  return get() ? "yes" : "no";
 }
 
 class StringSelectionParameter : public Parameter {
