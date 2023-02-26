@@ -481,10 +481,10 @@ public:
     "%4.2f",
   };
   BoolParameter ROTATE_SCREEN {
-    "rotate_screen",
-    "DO_NOT_DISPLAY",
-    ISettings::ADJUSTMENT_NONE,
-    false,
+      "rotate_screen",
+      "DO_NOT_DISPLAY",
+      ISettings::ADJUSTMENT_NONE,
+      false,
   };
   NumericParameter<double> SCREEN_BRIGHTNESS {
     "screen_brightness",
@@ -493,6 +493,12 @@ public:
     1.0,
     0, 1.0, 0.05,
     "%4.2f",
+  };
+  BoolParameter SHOW_NUMERIC_AIRSPEED {
+      "show_numeric_airspeed",
+      "SPD?",
+      ISettings::ADJUSTMENT_SHOW_NUMERIC_AIRSPEED,
+      true,
   };
 
   const std::vector<Parameter *> ALL_PARAMS = {
@@ -524,6 +530,7 @@ public:
       (Parameter*) &SPEED_UNITS,
       (Parameter*) &ROTATE_SCREEN,
       (Parameter*) &SCREEN_BRIGHTNESS,
+      (Parameter*) &SHOW_NUMERIC_AIRSPEED,
   };
 };
 

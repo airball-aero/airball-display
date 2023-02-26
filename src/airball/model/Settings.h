@@ -48,6 +48,7 @@ public:
   std::string speed_units() const override;
   bool rotate_screen() const override;
   double screen_brightness() const override;
+  bool show_numeric_airspeed() const override;
 
   Adjustment adjustment() const override;
 

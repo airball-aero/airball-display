@@ -147,6 +147,11 @@ public:
    */
   virtual double screen_brightness () const = 0;
 
+  /**
+   * @return whether to show a numeric airspeed in the ball.
+   */
+   virtual bool show_numeric_airspeed() const = 0;
+
    enum Adjustment {
      ADJUSTMENT_NONE = 0,
      ADJUSTMENT_IAS_FULL_SCAlE = 1,
@@ -174,6 +179,7 @@ public:
      ADJUSTMENT_AUDIO_VOLUME = 23,
      ADJUSTMENT_SPEED_UNITS = 24,
      ADJUSTMENT_SCREEN_BRIGHTNESS = 25,
+     ADJUSTMENT_SHOW_NUMERIC_AIRSPEED = 26,
    };
 
   virtual Adjustment adjustment() const = 0;

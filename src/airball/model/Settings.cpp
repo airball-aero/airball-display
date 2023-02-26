@@ -161,6 +161,7 @@ void Settings::buildParamsVectors() {
   adjustmentParamsShallow_.push_back(&store_->SCREEN_BRIGHTNESS);
   adjustmentParamsShallow_.push_back(&store_->AUDIO_VOLUME);
   adjustmentParamsShallow_.push_back(&store_->SHOW_ALTIMETER);
+  adjustmentParamsShallow_.push_back(&store_->SHOW_NUMERIC_AIRSPEED);
 
   adjustmentParamsDeep_ = {
     &store_->IAS_FULL_SCALE,
@@ -349,6 +350,10 @@ bool Settings::rotate_screen() const {
 
 double Settings::screen_brightness() const {
   return store_->SCREEN_BRIGHTNESS.get();
+}
+
+bool Settings::show_numeric_airspeed() const {
+  return store_->SHOW_NUMERIC_AIRSPEED.get();
 }
 
 Settings::Adjustment Settings::adjustment() const {
