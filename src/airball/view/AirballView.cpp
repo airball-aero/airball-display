@@ -504,7 +504,7 @@ void PaintCycle::paintAirballAirspeed(const Point& center, const double radius) 
     // Determine the size of the airspeed text
     char airspeedText[printBufSize_];
     double ias_display_units_ =
-        meters_per_second_to_mph(model_.airdata()->smooth_ball().ias());
+        airspeed_to_display_units(model_.airdata()->smooth_ball().ias());
     snprintf(
         airspeedText,
         printBufSize_,
@@ -551,7 +551,7 @@ void PaintCycle::paintAirballAirspeed(const Point& center, const double radius) 
 }
 
 void PaintCycle::paintAirballAirspeedLimits(const Point& center) {
-  if (meters_per_second_to_mph(model_.airdata()->smooth_ball().ias()) < model_.settings()->v_r()) {
+  if (airspeed_to_display_units(model_.airdata()->smooth_ball().ias()) < model_.settings()->v_r()) {
     paintAirballAirspeedLimitsRotate(center);
   } else {
     paintAirballAirspeedLimitsNormal(center);
