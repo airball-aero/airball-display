@@ -9,7 +9,7 @@
 namespace airball {
 
 const static auto kSendDelay = std::chrono::milliseconds(20);
-const static auto kPeriodAirdata = std::chrono::milliseconds (20000);
+const static auto kPeriodAirdata = std::chrono::milliseconds (5000);
 
 struct Model {
   const double min;

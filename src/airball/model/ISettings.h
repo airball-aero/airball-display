@@ -83,14 +83,14 @@ public:
   virtual double baro_setting() const = 0;
 
   /**
-   * @return the ball smoothing factor.
+   * @return the ball filter time constant (in seconds).
    */
-  virtual double ball_smoothing_factor() const = 0;
+  virtual double ball_time_constant() const = 0;
 
   /**
-   * @return the VSI smoothing factor.
+   * @return the VSI filter time constant (in seconds).
    */
-  virtual double vsi_smoothing_factor() const = 0;
+  virtual double vsi_time_constant() const = 0;
 
   /**
    * @return the screen width.
@@ -150,9 +150,9 @@ public:
   /**
    * @return whether to show a numeric airspeed in the ball.
    */
-   virtual bool show_numeric_airspeed() const = 0;
+  virtual bool show_numeric_airspeed() const = 0;
 
-   enum Adjustment {
+  enum Adjustment {
      ADJUSTMENT_NONE = 0,
      ADJUSTMENT_IAS_FULL_SCAlE = 1,
      ADJUSTMENT_V_R = 2,
@@ -169,8 +169,8 @@ public:
      ADJUSTMENT_BETA_FULL_SCALE = 13,
      ADJUSTMENT_BETA_BIAS = 14,
      ADJUSTMENT_BARO_SETTING = 15,
-     ADJUSTMENT_BALL_SMOOTHING_FACTOR = 16,
-     ADJUSTMENT_VSI_SMOOTHING_FACTOR = 17,
+     ADJUSTMENT_BALL_TIME_CONSTANT = 16,
+     ADJUSTMENT_VSI_TIME_CONSTANT = 17,
      ADJUSTMENT_SHOW_ALTIMETER = 18,
      ADJUSTMENT_SHOW_LINK_STATUS = 19,
      ADJUSTMENT_SHOW_PROBE_BATTERY_STATUS = 20,
