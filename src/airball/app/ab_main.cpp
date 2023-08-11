@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <memory>
+#include <pigpio.h>
 #include "gflags/gflags.h"
 
 #include "../../framework/Application.h"
@@ -89,6 +90,21 @@ std::unique_ptr<ITelemetry> buildTelemetry() {
   exit(-1);
 }
 
+
+void write_single_gpio(unsigned char bit, unsigned char state) {
+  if (bit > 31) {
+    exit(-1);
+  }
+  const uint32_t s = 0x01 << bit;
+  if (state) {
+    gpioWrite_Bits_0_31_Set(s);
+  } else {
+    gpioWrite_Bits_0_31_Clear(s);
+  }
+  volatile uint32_t barrier = gpioRead_Bits_0_31();
+}
+
+
 class AirballApplication : public Application<IAirballModel> {
 public:
   AirballApplication() = default;
@@ -96,6 +112,13 @@ public:
 
 protected:
   void initialize() override {
+    if (gpioInitialise() < 0) {
+      exit(-1);
+    }
+    gpioSetMode(2, PI_OUTPUT);
+    write_single_gpio(2, 0);
+    write_single_gpio(2, 1);
+    write_single_gpio(2, 0);
     setFrameInterval(kFrameInterval);
     auto settings = std::make_unique<Settings>(
         FLAGS_settings_file_path,

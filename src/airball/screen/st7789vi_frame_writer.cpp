@@ -11,7 +11,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-constexpr unsigned char kPinBrightPwm   =  2; // raspi header pin  3
+constexpr unsigned char kPinBrightPwm   = 25; // raspi header pin n/a
 constexpr unsigned char kPinDataCommand = 26; // raspi header pin 37
 constexpr unsigned char kPinReset       = 27; // raspi header pin 13
 
