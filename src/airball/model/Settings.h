@@ -35,8 +35,8 @@ public:
   double beta_full_scale() const override;
   double beta_bias() const override;
   double baro_setting() const override;
-  double ball_smoothing_factor() const override;
-  double vsi_smoothing_factor() const override;
+  double ball_time_constant() const override;
+  double vsi_time_constant() const override;
   int screen_width() const override;
   int screen_height() const override;
   bool show_altimeter() const override;

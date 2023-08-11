@@ -37,8 +37,8 @@ private:
       double p,
       double t,
       double qnh,
-      double ball_smoothing_factor,
-      double vsi_smoothing_factor);
+      double ball_time_constant,
+      double vsi_time_constant);
 
   static constexpr int kSlineReaderamplesPerSecond = 20;
   static constexpr uint kNumBalls = 20;

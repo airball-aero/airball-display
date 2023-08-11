@@ -178,8 +178,8 @@ void Settings::buildParamsVectors() {
     &store_->ALPHA_REF,
     &store_->BETA_FULL_SCALE,
     &store_->BETA_BIAS,
-    &store_->BALL_SMOOTHING_FACTOR,
-    &store_->VSI_SMOOTHING_FACTOR,
+    &store_->BALL_TIME_CONSTANT,
+    &store_->VSI_TIME_CONSTANT,
     &store_->DECLUTTER,
     &store_->SOUND_SCHEME,
     &store_->SPEED_UNITS,
@@ -300,12 +300,12 @@ double Settings::baro_setting() const {
   return store_->BARO_SETTING.get();
 }
 
-double Settings::ball_smoothing_factor() const {
-  return store_->BALL_SMOOTHING_FACTOR.get();
+double Settings::ball_time_constant() const {
+  return store_->BALL_TIME_CONSTANT.get();
 }
 
-double Settings::vsi_smoothing_factor() const {
-  return store_->VSI_SMOOTHING_FACTOR.get();
+double Settings::vsi_time_constant() const {
+  return store_->VSI_TIME_CONSTANT.get();
 }
 
 int Settings::screen_width() const {

@@ -409,21 +409,21 @@ public:
     25, 35, 0.01,
     "%5.2f",
   };
-  NumericParameter<double> BALL_SMOOTHING_FACTOR {
-    "ball_smoothing_factor",
-    "BALL SMTH",
-    ISettings::ADJUSTMENT_BALL_SMOOTHING_FACTOR,
-    1.0,
-    0.0, 1.0, 0.01,
-    "%4.2f",
+  NumericParameter<double> BALL_TIME_CONSTANT {
+      "ball_time_constant",
+      "BALL T",
+      ISettings::ADJUSTMENT_BALL_TIME_CONSTANT,
+      0.5,
+      0, 1.0, 0.1,
+      "%4.2f",
   };
-  NumericParameter<double> VSI_SMOOTHING_FACTOR {
-    "vsi_smoothing_factor",
-    "VSI SMTH",
-    ISettings::ADJUSTMENT_VSI_SMOOTHING_FACTOR,
+  NumericParameter<double> VSI_TIME_CONSTANT {
+    "vsi_time_constant",
+    "VSI T",
+    ISettings::ADJUSTMENT_VSI_TIME_CONSTANT,
     1.0,
-    0.0, 1.0, 0.01,
-    "%4.2f",
+    0.1, 5.0, 0.1,
+    "%3.1f",
   };
   NumericParameter<int> SCREEN_WIDTH {
     "screen_width",
@@ -517,8 +517,8 @@ public:
       (Parameter*) &BETA_FULL_SCALE,
       (Parameter*) &BETA_BIAS,
       (Parameter*) &BARO_SETTING,
-      (Parameter*) &BALL_SMOOTHING_FACTOR,
-      (Parameter*) &VSI_SMOOTHING_FACTOR,
+      (Parameter*) &BALL_TIME_CONSTANT,
+      (Parameter*) &VSI_TIME_CONSTANT,
       (Parameter*) &SCREEN_WIDTH,
       (Parameter*) &SCREEN_HEIGHT,
       (Parameter*) &SHOW_ALTIMETER,

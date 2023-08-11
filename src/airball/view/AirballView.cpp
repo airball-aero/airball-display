@@ -211,7 +211,7 @@ void PaintCycle::layout() {
 
   airballFill_ = Color(255, 255, 255);
 
-  rawAirballsMaxBrightness_ = 0.375;
+  rawAirballsMaxBrightness_ = 0.75;
 
   airballCrosshairsStroke_ = Stroke(
       Color(128, 128, 128),

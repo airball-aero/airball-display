@@ -7,8 +7,6 @@
 
 namespace airball {
 
-constexpr int kClimbRateFilterSizeMin = 1;
-constexpr int kClimbRateFilterSizeMax = 100;
 constexpr double kSamplesPerSecond = 20;
 
 constexpr static std::chrono::milliseconds
@@ -47,15 +45,10 @@ Airdata::~Airdata() {
 }
 
 static double
-smooth(double current_value, double new_value, double smoothing_factor) {
-  return ((1.0 - smoothing_factor) * new_value) +
-         (smoothing_factor * current_value);
-}
-
-static int computeClimbRateFilterSize(double vsi_smoothing_factor) {
-  return (int) (kClimbRateFilterSizeMin +
-         vsi_smoothing_factor *
-         (kClimbRateFilterSizeMax - kClimbRateFilterSizeMin));
+smooth(double current_value, double new_value, double time_constant) {
+  double sample_time = 1.0 / kSamplesPerSecond;
+  double factor = exp(-1.0 * sample_time / time_constant);
+  return ((1.0 - factor) * new_value) + (factor * current_value);
 }
 
 void Airdata::update(const ITelemetry::Sample d) {
@@ -66,8 +59,8 @@ void Airdata::update(const ITelemetry::Sample d) {
       d.airdata.p,
       d.airdata.t,
       settings_->baro_setting() * kPascalsPerInHg,
-      settings_->ball_smoothing_factor(),
-      settings_->vsi_smoothing_factor());
+      settings_->ball_time_constant(),
+      settings_->vsi_time_constant());
 }
 
 void Airdata::update(
@@ -77,8 +70,8 @@ void Airdata::update(
     const double p,
     const double t,
     const double qnh,
-    const double ball_smoothing_factor,
-    const double vsi_smoothing_factor) {
+    const double ball_time_constant,
+    const double vsi_time_constant) {
   double new_ias = q_to_ias(q);
   double new_tas = q_to_tas(q, p, t);
 
@@ -91,10 +84,10 @@ void Airdata::update(
   new_tas = isnan(new_tas) ? smooth_ball_.tas() : new_tas;
 
   smooth_ball_ = Ball(
-      smooth(smooth_ball_.alpha(), alpha, ball_smoothing_factor),
-      smooth(smooth_ball_.beta(), beta, ball_smoothing_factor),
-      smooth(smooth_ball_.ias(), new_ias, ball_smoothing_factor),
-      smooth(smooth_ball_.tas(), new_tas, ball_smoothing_factor));
+      smooth(smooth_ball_.alpha(), alpha, ball_time_constant),
+      smooth(smooth_ball_.beta(), beta, ball_time_constant),
+      smooth(smooth_ball_.ias(), new_ias, ball_time_constant),
+      smooth(smooth_ball_.tas(), new_tas, ball_time_constant));
 
   for (size_t i = raw_balls_.size() - 1; i > 0; i--) {
     raw_balls_[i] = raw_balls_[i - 1];
@@ -103,7 +96,7 @@ void Airdata::update(
 
   pressure_altitude_ = pressure_to_altitude(t, p, QNH_STANDARD);
 
-  int climbRateFilterSize = computeClimbRateFilterSize(vsi_smoothing_factor);
+  int climbRateFilterSize = vsi_time_constant * kSamplesPerSecond;
   if (climbRateFilterSize != climb_rate_filter_.size()) {
     climb_rate_filter_ = LinearRateFilter(climbRateFilterSize);
   }
