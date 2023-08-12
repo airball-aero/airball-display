@@ -2,6 +2,7 @@
 #define SRC_AIRBALL_MODEL_TELEMETRY_UDPTELEMETRY_H
 
 #include <memory>
+#include <chrono>
 
 #include "ITelemetry.h"
 #include "UdpPacketReader.h"
@@ -17,6 +18,11 @@ public:
 
 private:
   UdpPacketReader reader_;
+
+  bool initialized_;
+  std::chrono::steady_clock::duration max_delta_;
+  std::chrono::steady_clock::time_point previous_time_;
+  int packet_count_;
 };
 
 } // airball
