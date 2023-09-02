@@ -182,6 +182,7 @@ void Settings::buildParamsVectors() {
     &store_->DECLUTTER,
     &store_->SOUND_SCHEME,
     &store_->SPEED_UNITS,
+    &store_->Q_CORRECTION_FACTOR,
   };
 }
 
@@ -349,6 +350,10 @@ double Settings::screen_brightness() const {
 
 bool Settings::show_numeric_airspeed() const {
   return store_->SHOW_NUMERIC_AIRSPEED.get();
+}
+
+double Settings::q_correction_factor() const {
+  return store_->Q_CORRECTION_FACTOR.get();
 }
 
 bool Settings::adjusting() const {

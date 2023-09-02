@@ -439,11 +439,11 @@ public:
       0,
   };
   NumericParameter<double> AUDIO_VOLUME {
-    "audio_volume",
-    "VOL",
-    1.0,
-    0, 1.0, 0.05,
-    "%4.2f",
+      "audio_volume",
+      "VOL",
+      1.0,
+      0, 1.0, 0.05,
+      "%4.2f",
   };
   BoolParameter ROTATE_SCREEN {
       "rotate_screen",
@@ -462,7 +462,14 @@ public:
       "SPD?",
       true,
   };
-
+  NumericParameter<double> Q_CORRECTION_FACTOR {
+      "q_correction_factor",
+      "Q_COR",
+      1.0,
+      0.5, 1.5, 0.05,
+      "%4.2f",
+  };
+  
   const std::vector<Parameter *> ALL_PARAMS = {
       (Parameter*) &IAS_FULL_SCALE,
       (Parameter*) &V_R,
@@ -493,6 +500,7 @@ public:
       (Parameter*) &ROTATE_SCREEN,
       (Parameter*) &SCREEN_BRIGHTNESS,
       (Parameter*) &SHOW_NUMERIC_AIRSPEED,
+      (Parameter*) &Q_CORRECTION_FACTOR,
   };
 };
 

@@ -152,6 +152,11 @@ public:
    */
   virtual bool show_numeric_airspeed() const = 0;
 
+  /**
+   * @return dynamic pressure correction factor.
+   */
+  virtual double q_correction_factor() const = 0;
+
   virtual bool adjusting() const = 0;
 
   virtual std::string adjustmentDisplayName() const = 0;

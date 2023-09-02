@@ -72,8 +72,10 @@ void Airdata::update(
     const double qnh,
     const double ball_time_constant,
     const double vsi_time_constant) {
-  double new_ias = q_to_ias(q);
-  double new_tas = q_to_tas(q, p, t);
+  double q_corr = q * settings_->q_correction_factor();
+
+  double new_ias = q_to_ias(q_corr);
+  double new_tas = q_to_tas(q_corr, p, t);
 
   // If we allow NaN's to get through, they will "pollute" the smoothing
   // computation and every smoothed value thereafter will be NaN. This guard

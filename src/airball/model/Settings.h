@@ -49,6 +49,7 @@ public:
   bool rotate_screen() const override;
   double screen_brightness() const override;
   bool show_numeric_airspeed() const override;
+  double q_correction_factor() const override;
 
   bool adjusting() const override;
 
