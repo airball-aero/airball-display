@@ -1184,7 +1184,7 @@ void PaintCycle::paintUnitsAnnotation() {
 }
 
 void PaintCycle::paintAdjusting() {
-  if (model_.settings()->adjustment() == ISettings::ADJUSTMENT_NONE) {
+  if (!model_.settings()->adjusting()) {
     return;
   }
   double rectHeight =

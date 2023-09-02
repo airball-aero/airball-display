@@ -11,8 +11,8 @@ namespace airball {
 
 class Parameter {
 public:
-  Parameter(const std::string& json_key, const std::string& display_name, ISettings::Adjustment adjustment)
-      : json_key_(json_key), display_name_(display_name), adjustment_(adjustment) {}
+  Parameter(const std::string& json_key, const std::string& display_name)
+      : json_key_(json_key), display_name_(display_name) {}
 
   void load(const rapidjson::Document &doc) {
     if (doc.HasMember(json_key().c_str())) {
@@ -28,8 +28,6 @@ public:
 
   [[nodiscard]] std::string display_name() const { return display_name_; }
 
-  ISettings::Adjustment adjustment() { return adjustment_; }
-
   virtual void increment() = 0;
   virtual void decrement() = 0;
 
@@ -40,7 +38,6 @@ protected:
   virtual void saveImpl(rapidjson::Document &doc) const = 0;
 
 private:
-  const ISettings::Adjustment adjustment_;
   const std::string json_key_;
   const std::string display_name_;
 };
@@ -50,9 +47,8 @@ class TypedParameter : public Parameter {
 public:
   TypedParameter(const std::string& json_key,
                  const std::string& display_name,
-                 ISettings::Adjustment adjustment,
                  const T& initial)
-      : Parameter(json_key, display_name, adjustment),
+      : Parameter(json_key, display_name),
         value_(initial) {}
 
   [[nodiscard]] T get() const { return value_; }
@@ -127,10 +123,9 @@ class StringSelectionParameter : public Parameter {
 public:
   StringSelectionParameter(const std::string& json_key,
                            const std::string& display_name,
-                           ISettings::Adjustment adjustment,
                            const std::vector<std::string>& options,
                            const size_t initial_index)
-      : Parameter(json_key, display_name, adjustment),
+      : Parameter(json_key, display_name),
         current_index_(initial_index),
         options_(options) {}
 
@@ -179,9 +174,8 @@ class BoolParameter : public TypedParameter<bool> {
 public:
   BoolParameter(const std::string& json_key,
                 const std::string& display_name,
-                ISettings::Adjustment adjustment,
                 const bool& initial)
-      : TypedParameter<bool>(json_key, display_name, adjustment, initial) {}
+      : TypedParameter<bool>(json_key, display_name, initial) {}
 
   void increment() override {
     if (!get()) {
@@ -201,13 +195,12 @@ class NumericParameter : public TypedParameter<T> {
 public:
   NumericParameter(const std::string &json_key,
                    const std::string& display_name,
-                   ISettings::Adjustment adjustment,
                    const T &initial,
                    const T &min,
                    const T &max,
                    const T &increment,
                    const std::string& format)
-      : TypedParameter<T>(json_key, display_name, adjustment, initial),
+      : TypedParameter<T>(json_key, display_name, initial),
         min_(min),
         max_(max),
         increment_(increment),
@@ -244,13 +237,12 @@ public:
   SpeedParameter(const StringSelectionParameter *speed_units,
                  const std::string &json_key,
                  const std::string &display_name,
-                 ISettings::Adjustment adjustment,
                  const double &initial,
                  const double &min,
                  const double &max,
                  const double &increment,
                  const std::string& format)
-      : NumericParameter<double>(json_key, display_name, adjustment, initial, min, max, increment, format),
+      : NumericParameter<double>(json_key, display_name, initial, min, max, increment, format),
         speed_units_(speed_units) {}
 
   [[nodiscard]] std::string display_value() const override {
@@ -267,13 +259,12 @@ class AngleParameter : public NumericParameter<double> {
 public:
   AngleParameter(const std::string &json_key,
                  const std::string &display_name,
-                 ISettings::Adjustment adjustment,
                  const double &initial,
                  const double &min,
                  const double &max,
                  const double &increment,
                  const std::string& format)
-      : NumericParameter<double>(json_key, display_name, adjustment, initial, min, max, increment, format) {}
+      : NumericParameter<double>(json_key, display_name, initial, min, max, increment, format) {}
 
   [[nodiscard]] std::string display_value() const override {
     return str(boost::format("%s °") %
@@ -286,7 +277,6 @@ public:
   StringSelectionParameter SPEED_UNITS {
     "speed_units",
     "SPD",
-    ISettings::ADJUSTMENT_SPEED_UNITS,
     {"knots", "mph"},
     0,
   };
@@ -294,7 +284,6 @@ public:
     &SPEED_UNITS,
     "ias_full_scale",
     "V_FS",
-    ISettings::ADJUSTMENT_IAS_FULL_SCAlE,
     100, 0, 300, 1,
     "%3.0f",
   };
@@ -302,7 +291,6 @@ public:
     &SPEED_UNITS,
     "v_r",
     "V_R",
-    ISettings::ADJUSTMENT_V_R,
     50, 0, 300, 1,
     "%3.0f",
   };
@@ -310,7 +298,6 @@ public:
     &SPEED_UNITS,
     "v_fe",
     "V_FE",
-    ISettings::ADJUSTMENT_V_FE,
     75, 0, 300, 1,
     "%3.0f",
   };
@@ -318,7 +305,6 @@ public:
     &SPEED_UNITS,
     "v_no",
     "V_NO",
-    ISettings::ADJUSTMENT_V_NO,
     100, 0, 300, 1,
     "%3.0f",
   };
@@ -326,21 +312,18 @@ public:
     &SPEED_UNITS,
     "v_ne",
     "V_NE",
-    ISettings::ADJUSTMENT_V_NE,
     100, 0, 300, 1,
     "%3.0f",
   };
   AngleParameter ALPHA_STALL {
     "alpha_stall",
     "α_CRIT",
-    ISettings::ADJUSTMENT_ALPHA_STALL,
     15.0, -10.0, 30.0, 0.1,
     "%4.1f",
   };
   AngleParameter ALPHA_STALL_WARNING {
     "alpha_stall_warning",
     "α_CRIT_W",
-    ISettings::ADJUSTMENT_ALPHA_STALL_WARNING,
     14.0,
     -10.0, 30.0, 0.1,
     "%4.1f",
@@ -348,7 +331,6 @@ public:
   AngleParameter ALPHA_MIN {
     "alpha_min",
     "α_MIN",
-    ISettings::ADJUSTMENT_ALPHA_MIN,
     -10.0,
     -10.0, 30.0, 0.1,
     "%4.1f",
@@ -356,7 +338,6 @@ public:
   AngleParameter ALPHA_MAX {
     "alpha_max",
     "α_MAX",
-    ISettings::ADJUSTMENT_ALPHA_MAX,
     20.0,
     -10.0, 30.0, 0.1,
     "%4.1f",
@@ -364,7 +345,6 @@ public:
   AngleParameter ALPHA_X {
     "alpha_x",
     "α_X",
-    ISettings::ADJUSTMENT_ALPHA_X,
     12.0,
     -10.0, 30.0, 0.1,
     "%4.1f",
@@ -372,7 +352,6 @@ public:
   AngleParameter ALPHA_Y {
     "alpha_y",
     "α_Y",
-    ISettings::ADJUSTMENT_ALPHA_X,
     10.0,
     -10.0, 30.0, 0.1,
     "%4.1f",
@@ -380,7 +359,6 @@ public:
   AngleParameter ALPHA_REF {
     "alpha_ref",
     "α_REF",
-    ISettings::ADJUSTMENT_ALPHA_REF,
     14.0,
     -10.0, 30.0, 0.1,
     "%4.1f",
@@ -388,7 +366,6 @@ public:
   AngleParameter BETA_FULL_SCALE {
     "beta_full_scale",
     "β_FS",
-    ISettings::ADJUSTMENT_BETA_FULL_SCALE,
     20.0,
     0, 30.0, 5,
     "%4.1f",
@@ -396,7 +373,6 @@ public:
   AngleParameter BETA_BIAS {
     "beta_bias",
     "β BIAS",
-    ISettings::ADJUSTMENT_BETA_BIAS,
     0.0,
     0, 30.0, 0.1,
     "%4.1f",
@@ -404,7 +380,6 @@ public:
   NumericParameter<double> BARO_SETTING {
     "baro_setting",
     "BARO",
-    ISettings::ADJUSTMENT_BARO_SETTING,
     29.92,
     25, 35, 0.01,
     "%5.2f",
@@ -412,7 +387,6 @@ public:
   NumericParameter<double> BALL_TIME_CONSTANT {
       "ball_time_constant",
       "BALL T",
-      ISettings::ADJUSTMENT_BALL_TIME_CONSTANT,
       0.5,
       0, 1.0, 0.1,
       "%4.2f",
@@ -420,7 +394,6 @@ public:
   NumericParameter<double> VSI_TIME_CONSTANT {
     "vsi_time_constant",
     "VSI T",
-    ISettings::ADJUSTMENT_VSI_TIME_CONSTANT,
     1.0,
     0.1, 5.0, 0.1,
     "%3.1f",
@@ -428,7 +401,6 @@ public:
   NumericParameter<int> SCREEN_WIDTH {
     "screen_width",
     "DO_NOT_DISPLAY",
-    ISettings::ADJUSTMENT_NONE,
     272,
     272, 272, 0,
     "%d",
@@ -436,7 +408,6 @@ public:
   NumericParameter<int> SCREEN_HEIGHT {
     "screen_height",
     "DO_NOT_DISPLAY",
-    ISettings::ADJUSTMENT_NONE,
     480,
     480, 480, 0,
     "%d",
@@ -444,38 +415,32 @@ public:
   BoolParameter SHOW_ALTIMETER {
     "show_altimeter",
     "ALT?",
-    ISettings::ADJUSTMENT_SHOW_ALTIMETER,
     true,
   };
   BoolParameter SHOW_LINK_STATUS {
     "show_link_status",
     "LINK?",
-    ISettings::ADJUSTMENT_SHOW_LINK_STATUS,
     true,
   };
   BoolParameter SHOW_PROBE_BATTERY_STATUS {
     "show_probe_battery_status",
     "BAT?",
-    ISettings::ADJUSTMENT_SHOW_PROBE_BATTERY_STATUS,
     true,
   };
   BoolParameter DECLUTTER {
     "declutter",
     "DCLTR?",
-    ISettings::ADJUSTMENT_DECLUTTER,
     false,
   };
   StringSelectionParameter SOUND_SCHEME {
       "sound_scheme",
       "SND",
-      ISettings::ADJUSTMENT_SOUND_SCHEME,
       {"stallfence", "flyonspeed"},
       0,
   };
   NumericParameter<double> AUDIO_VOLUME {
     "audio_volume",
     "VOL",
-    ISettings::ADJUSTMENT_AUDIO_VOLUME,
     1.0,
     0, 1.0, 0.05,
     "%4.2f",
@@ -483,13 +448,11 @@ public:
   BoolParameter ROTATE_SCREEN {
       "rotate_screen",
       "DO_NOT_DISPLAY",
-      ISettings::ADJUSTMENT_NONE,
       false,
   };
   NumericParameter<double> SCREEN_BRIGHTNESS {
     "screen_brightness",
     "BRT",
-    ISettings::ADJUSTMENT_SCREEN_BRIGHTNESS,
     1.0,
     0, 1.0, 0.05,
     "%4.2f",
@@ -497,7 +460,6 @@ public:
   BoolParameter SHOW_NUMERIC_AIRSPEED {
       "show_numeric_airspeed",
       "SPD?",
-      ISettings::ADJUSTMENT_SHOW_NUMERIC_AIRSPEED,
       true,
   };
 

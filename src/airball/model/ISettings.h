@@ -152,37 +152,7 @@ public:
    */
   virtual bool show_numeric_airspeed() const = 0;
 
-  enum Adjustment {
-     ADJUSTMENT_NONE = 0,
-     ADJUSTMENT_IAS_FULL_SCAlE = 1,
-     ADJUSTMENT_V_R = 2,
-     ADJUSTMENT_V_FE = 3,
-     ADJUSTMENT_V_NO = 4,
-     ADJUSTMENT_V_NE = 5,
-     ADJUSTMENT_ALPHA_STALL = 6,
-     ADJUSTMENT_ALPHA_STALL_WARNING = 7,
-     ADJUSTMENT_ALPHA_MIN = 8,
-     ADJUSTMENT_ALPHA_MAX = 9,
-     ADJUSTMENT_ALPHA_X = 10,
-     ADJUSTMENT_ALPHA_Y = 11,
-     ADJUSTMENT_ALPHA_REF = 12,
-     ADJUSTMENT_BETA_FULL_SCALE = 13,
-     ADJUSTMENT_BETA_BIAS = 14,
-     ADJUSTMENT_BARO_SETTING = 15,
-     ADJUSTMENT_BALL_TIME_CONSTANT = 16,
-     ADJUSTMENT_VSI_TIME_CONSTANT = 17,
-     ADJUSTMENT_SHOW_ALTIMETER = 18,
-     ADJUSTMENT_SHOW_LINK_STATUS = 19,
-     ADJUSTMENT_SHOW_PROBE_BATTERY_STATUS = 20,
-     ADJUSTMENT_DECLUTTER = 21,
-     ADJUSTMENT_SOUND_SCHEME = 22,
-     ADJUSTMENT_AUDIO_VOLUME = 23,
-     ADJUSTMENT_SPEED_UNITS = 24,
-     ADJUSTMENT_SCREEN_BRIGHTNESS = 25,
-     ADJUSTMENT_SHOW_NUMERIC_AIRSPEED = 26,
-   };
-
-  virtual Adjustment adjustment() const = 0;
+  virtual bool adjusting() const = 0;
 
   virtual std::string adjustmentDisplayName() const = 0;
   virtual std::string adjustmentDisplayValue() const = 0;

@@ -50,7 +50,7 @@ public:
   double screen_brightness() const override;
   bool show_numeric_airspeed() const override;
 
-  Adjustment adjustment() const override;
+  bool adjusting() const override;
 
   std::string adjustmentDisplayName() const override;
   std::string adjustmentDisplayValue() const override;

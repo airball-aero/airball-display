@@ -154,14 +154,13 @@ Settings::Settings(const std::string& settingsFilePath,
 }
 
 void Settings::buildParamsVectors() {
-  adjustmentParamsShallow_.clear();
-  if (store_->SHOW_ALTIMETER.get()) {
-    adjustmentParamsShallow_.push_back(&store_->BARO_SETTING);
-  }
-  adjustmentParamsShallow_.push_back(&store_->SCREEN_BRIGHTNESS);
-  adjustmentParamsShallow_.push_back(&store_->AUDIO_VOLUME);
-  adjustmentParamsShallow_.push_back(&store_->SHOW_ALTIMETER);
-  adjustmentParamsShallow_.push_back(&store_->SHOW_NUMERIC_AIRSPEED);
+  adjustmentParamsShallow_ = {
+      &store_->BARO_SETTING,
+      &store_->SCREEN_BRIGHTNESS,
+      &store_->AUDIO_VOLUME,
+      &store_->SHOW_ALTIMETER,
+      &store_->SHOW_NUMERIC_AIRSPEED,
+  };
 
   adjustmentParamsDeep_ = {
     &store_->IAS_FULL_SCALE,
@@ -184,10 +183,6 @@ void Settings::buildParamsVectors() {
     &store_->SOUND_SCHEME,
     &store_->SPEED_UNITS,
   };
-
-  if (currentAdjustingVector_ != nullptr) {
-    currentAdjustingIndex_ = std::min(currentAdjustingIndex_, currentAdjustingVector_->size());
-  }
 }
 
 Settings::~Settings() {}
@@ -356,10 +351,8 @@ bool Settings::show_numeric_airspeed() const {
   return store_->SHOW_NUMERIC_AIRSPEED.get();
 }
 
-Settings::Adjustment Settings::adjustment() const {
-  return (currentAdjustingVector_ == nullptr)
-         ? ADJUSTMENT_NONE
-         : (*currentAdjustingVector_)[currentAdjustingIndex_]->adjustment();
+bool Settings::adjusting() const {
+  return (currentAdjustingVector_ != nullptr);
 }
 
 std::string Settings::adjustmentDisplayName() const  {
@@ -394,14 +387,12 @@ void Settings::nextAdjustment() {
 void Settings::hidIncrement() {
   startAdjustingShallow();
   (*currentAdjustingVector_)[currentAdjustingIndex_]->increment();
-  buildParamsVectors();
   save();
 }
 
 void Settings::hidDecrement() {
   startAdjustingShallow();
   (*currentAdjustingVector_)[currentAdjustingIndex_]->decrement();
-  buildParamsVectors();
   save();
 }
 
