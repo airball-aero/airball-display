@@ -140,7 +140,6 @@ Settings::Settings(const std::string& settingsFilePath,
                    IEventQueue *eventQueue)
     : path_(settingsFilePath),
       loaded_(false),
-      eventQueue_(eventQueue),
       currentAdjustingVector_(nullptr),
       currentAdjustingIndex_(0) {
   settingsEventSource_ = std::make_unique<SettingsEventSource>(

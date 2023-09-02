@@ -76,7 +76,6 @@ private:
   bool loaded_;
   std::unique_ptr<SettingsEventSource> settingsEventSource_;
   std::unique_ptr<SettingsStore> store_;
-  IEventQueue* eventQueue_;
 
   std::vector<Parameter*> adjustmentParamsShallow_;
   std::vector<Parameter*> adjustmentParamsDeep_;
