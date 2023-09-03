@@ -29,7 +29,7 @@ Airdata::Airdata(IEventQueue* eventQueue,
 void Airdata::start() {
   updateThread_ = std::thread([&]() {
     while (true) {
-      ITelemetry::Sample s = telemetry_->get();
+      ITelemetry::Sample s = telemetry_->receiveSample();
       if (std::holds_alternative<ITelemetry::Airdata>(s)) {
         eventQueue_->enqueue([this, s]() {
           update(std::get<ITelemetry::Airdata>(s));

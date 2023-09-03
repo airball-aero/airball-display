@@ -12,7 +12,8 @@ public:
   FakeTelemetry();
   ~FakeTelemetry() = default;
 
-  Sample get() override;
+  Sample receiveSample() override;
+  void sendSample(Sample s) override;
 
 private:
   unsigned long seq_counter_;

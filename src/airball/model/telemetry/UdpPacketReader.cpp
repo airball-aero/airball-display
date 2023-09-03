@@ -39,7 +39,7 @@ bool UdpPacketReader::open() {
   return true;
 }
 
-std::string UdpPacketReader::readLine() {
+std::string UdpPacketReader::read() {
   sockaddr_in sender_address{};
   socklen_t sender_address_len = sizeof(sender_address);
   ssize_t result = recvfrom(socket_fd_, &receive_buffer_,

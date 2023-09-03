@@ -68,9 +68,13 @@ ITelemetry::Sample make_airdata(unsigned long seq) {
 FakeTelemetry::FakeTelemetry()
     : seq_counter_(0) {}
 
-ITelemetry::Sample FakeTelemetry::get() {
+ITelemetry::Sample FakeTelemetry::receiveSample() {
   std::this_thread::sleep_for(kSendDelay);
   return make_airdata(seq_counter_++);
+}
+
+void FakeTelemetry::sendSample(ITelemetry::Sample s) {
+  // Do nothing
 }
 
 }  // namespace airball

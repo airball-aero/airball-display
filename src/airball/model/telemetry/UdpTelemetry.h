@@ -6,23 +6,21 @@
 
 #include "ITelemetry.h"
 #include "UdpPacketReader.h"
+#include "UdpPacketSender.h"
 
 namespace airball {
 
 class UdpTelemetry : public ITelemetry {
 public:
-  UdpTelemetry(int udpPort);
+  UdpTelemetry(std::string broadcastAddress, int udpPort);
   ~UdpTelemetry() = default;
 
-  Sample get() override;
+  Sample receiveSample() override;
+  void sendSample(Sample s) override;
 
 private:
   UdpPacketReader reader_;
-
-  bool initialized_;
-  std::chrono::steady_clock::duration max_delta_;
-  std::chrono::steady_clock::time_point previous_time_;
-  int packet_count_;
+  UdpPacketSender sender_;
 };
 
 } // airball

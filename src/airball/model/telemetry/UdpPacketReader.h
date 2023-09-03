@@ -11,7 +11,7 @@ public:
   explicit UdpPacketReader(int receive_port);
   ~UdpPacketReader();
 
-  std::string readLine();
+  std::string read();
 
 private:
   bool open();

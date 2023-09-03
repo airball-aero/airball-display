@@ -27,12 +27,17 @@ public:
     double battery_capacity_pct;
   };
 
-  typedef std::variant<Unknown, Airdata, Battery> Sample;
+  struct SettingsRequest {
+  };
 
-  virtual Sample get() = 0;
+  struct CompressedSettings {
+    std::string value;
+  };
 
-protected:
-  static Sample parse(const std::string& message);
+  typedef std::variant<Unknown, Airdata, Battery, SettingsRequest, CompressedSettings> Sample;
+
+  virtual Sample receiveSample() = 0;
+  virtual void sendSample(Sample s) = 0;
 };
 
 }  // namespace airball
