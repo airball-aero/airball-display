@@ -9,7 +9,7 @@ UdpTelemetry::UdpTelemetry(int udpPort)
       max_delta_(std::chrono::steady_clock::duration::zero()),
       previous_time_(std::chrono::steady_clock::now()) {}
 
-    ITelemetry::Sample
+ITelemetry::Sample
 UdpTelemetry::get() {
   auto r = parse(reader_.readLine());
 

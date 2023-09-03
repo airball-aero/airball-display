@@ -2,18 +2,17 @@
 #define AIRBALL_TELEMETRY_TELEMETRY_SAMPLE_H
 
 #include <string>
+#include <variant>
 
 namespace airball {
 
 class ITelemetry {
 public:
-  enum Type {
-    UNKNOWN = 0,
-    AIRDATA = 1,
-    BATTERY = 2,
+  struct Unknown {
   };
 
   struct Airdata {
+    unsigned long sequence;
     double alpha;
     double beta;
     double q;
@@ -22,19 +21,13 @@ public:
   };
 
   struct Battery {
+    unsigned long sequence;
     double battery_voltage;
     double battery_current;
     double battery_capacity_pct;
   };
 
-  struct Sample {
-    Type type;
-    unsigned long sequence;
-    union {
-      Airdata airdata;
-      Battery battery;
-    };
-  };
+  typedef std::variant<Unknown, Airdata, Battery> Sample;
 
   virtual Sample get() = 0;
 

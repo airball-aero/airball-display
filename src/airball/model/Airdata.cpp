@@ -30,9 +30,9 @@ void Airdata::start() {
   updateThread_ = std::thread([&]() {
     while (true) {
       ITelemetry::Sample s = telemetry_->get();
-      if (s.type == ITelemetry::AIRDATA) {
-        eventQueue_->enqueue([this, s] () {
-          update(s);
+      if (std::holds_alternative<ITelemetry::Airdata>(s)) {
+        eventQueue_->enqueue([this, s]() {
+          update(std::get<ITelemetry::Airdata>(s));
         });
       }
     }
@@ -51,13 +51,13 @@ smooth(double current_value, double new_value, double time_constant) {
   return ((1.0 - factor) * new_value) + (factor * current_value);
 }
 
-void Airdata::update(const ITelemetry::Sample d) {
+void Airdata::update(const ITelemetry::Airdata d) {
   update(
-      degrees_to_radians(d.airdata.alpha),
-      degrees_to_radians(d.airdata.beta),
-      d.airdata.q,
-      d.airdata.p,
-      d.airdata.t,
+      degrees_to_radians(d.alpha),
+      degrees_to_radians(d.beta),
+      d.q,
+      d.p,
+      d.t,
       settings_->baro_setting() * kPascalsPerInHg,
       settings_->ball_time_constant(),
       settings_->vsi_time_constant());

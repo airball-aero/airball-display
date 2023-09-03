@@ -28,7 +28,7 @@ public:
 
 private:
   void start();
-  void update(ITelemetry::Sample sample);
+  void update(ITelemetry::Airdata sample);
 
   void update(
       double alpha,

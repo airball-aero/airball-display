@@ -20,16 +20,13 @@ std::vector<std::string> split_comma(const std::string& s) {
 
 ITelemetry::Sample
 parse_airdata(const std::vector<std::string>& tokens) {
-  return {
-    .type = ITelemetry::AIRDATA,
+  return ITelemetry::Airdata {
     .sequence = (unsigned long) atoi(tokens[1].c_str()),
-    .airdata = {
-        .alpha = atof(tokens[2].c_str()),
-        .beta = atof(tokens[3].c_str()),
-        .q = atof(tokens[4].c_str()),
-        .p = atof(tokens[5].c_str()),
-        .t = atof(tokens[6].c_str()),
-    }
+    .alpha = atof(tokens[2].c_str()),
+    .beta = atof(tokens[3].c_str()),
+    .q = atof(tokens[4].c_str()),
+    .p = atof(tokens[5].c_str()),
+    .t = atof(tokens[6].c_str()),
   };
 }
 
@@ -39,10 +36,7 @@ ITelemetry::parse(const std::string& message) {
   if (tokens[0] == "$AR") {
     return parse_airdata(tokens);
   }
-  return {
-    .type = UNKNOWN,
-    .sequence = 0,
-  };
+  return ITelemetry::Unknown {};
 }
 
 }  // namespace airball

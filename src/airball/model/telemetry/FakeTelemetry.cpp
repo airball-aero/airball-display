@@ -55,16 +55,13 @@ double compute_phase_ratio() {
 
 ITelemetry::Sample make_airdata(unsigned long seq) {
   const double phase_ratio = compute_phase_ratio();
-  return ITelemetry::Sample {
-    .type = ITelemetry::AIRDATA,
+  return ITelemetry::Airdata {
     .sequence = seq,
-    .airdata = {
-        .alpha = interpolate_value(phase_ratio, kAirdataAlpha),
-        .beta = interpolate_value(phase_ratio, kAirdataBeta),
-        .q = interpolate_value(phase_ratio, kAirdataQ),
-        .p = interpolate_value(phase_ratio, kAirdataBaro),
-        .t = interpolate_value(phase_ratio, kAirdataOat),
-    },
+    .alpha = interpolate_value(phase_ratio, kAirdataAlpha),
+    .beta = interpolate_value(phase_ratio, kAirdataBeta),
+    .q = interpolate_value(phase_ratio, kAirdataQ),
+    .p = interpolate_value(phase_ratio, kAirdataBaro),
+    .t = interpolate_value(phase_ratio, kAirdataOat),
   };
 }
 
