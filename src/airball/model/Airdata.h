@@ -3,7 +3,7 @@
 
 #include <string>
 #include "../../framework/Application.h"
-#include "../model/IAirdata.h"
+#include "IAirdata.h"
 #include "telemetry/ITelemetry.h"
 #include "../util/LinearRateFilter.h"
 #include "ISettings.h"
@@ -13,9 +13,7 @@ namespace airball {
 
 class Airdata : public IAirdata {
 public:
-  Airdata(IEventQueue* eventQueue,
-          std::unique_ptr<ITelemetry> telemetry,
-          ISettings* settings);
+  Airdata(ISettings* settings);
 
   ~Airdata();
 
@@ -26,10 +24,9 @@ public:
   [[nodiscard]] const Ball& smooth_ball() const override { return smooth_ball_; }
   [[nodiscard]] const std::vector<Ball>& raw_balls() const override { return raw_balls_; }
 
-private:
-  void start();
-  void update(ITelemetry::Airdata sample);
+  void update(ITelemetry::Airdata sample) override;
 
+private:
   void update(
       double alpha,
       double beta,
@@ -43,8 +40,6 @@ private:
   static constexpr int kSlineReaderamplesPerSecond = 20;
   static constexpr uint kNumBalls = 20;
 
-  IEventQueue* eventQueue_;
-  std::unique_ptr<ITelemetry> telemetry_;
   ISettings* settings_;
 
   bool valid_;
@@ -58,8 +53,6 @@ private:
 
   double altitude_;
   double pressure_altitude_;
-
-  std::thread updateThread_;
 };
 
 } // namespace airball

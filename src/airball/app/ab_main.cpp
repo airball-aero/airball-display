@@ -48,15 +48,15 @@ namespace airball {
 
 class AirballModel : public IAirballModel {
 public:
-  AirballModel(std::unique_ptr<IAirdata> airdata, std::unique_ptr<ISettings> settings)
-      : airdata_(std::move(airdata)), settings_(std::move(settings)) {}
+  AirballModel(IAirdata* airdata, ISettings* settings)
+      : airdata_(airdata), settings_(settings) {}
 
-  [[nodiscard]] const IAirdata* airdata() const override { return airdata_.get(); }
-  [[nodiscard]] const ISettings* settings() const override { return settings_.get(); }
+  [[nodiscard]] const IAirdata* airdata() const override { return airdata_; }
+  [[nodiscard]] const ISettings* settings() const override { return settings_; }
 
 private:
-  std::unique_ptr<IAirdata> airdata_;
-  std::unique_ptr<ISettings> settings_;
+  IAirdata* airdata_;
+  ISettings* settings_;
 };
 
 std::unique_ptr<IScreen> buildScreen(const ISettings* settings) {
@@ -98,21 +98,37 @@ public:
 protected:
   void initialize() override {
     setFrameInterval(kFrameInterval);
-    auto settings = std::make_unique<Settings>(
+    settings_ = std::make_unique<Settings>(
         FLAGS_settings_file_path,
         FLAGS_settings_input_device_path,
         eventQueue());
-    setScreen(buildScreen(settings.get()));
+    setScreen(buildScreen(settings_.get()));
+    telemetry_ = buildTelemetry();
+    airdata_ = std::make_unique<Airdata>(settings_.get());
     setModel(std::make_unique<AirballModel>(
-        std::move(std::make_unique<Airdata>(
-            eventQueue(),
-            std::move(buildTelemetry()),
-            settings.get())),
-        std::move(settings)));
+        airdata_.get(),
+        settings_.get()));
     setView(std::move(std::make_unique<AirballView>()));
     setSoundMixer(std::make_unique<sound_mixer>(FLAGS_sound_device));
     setSoundScheme(std::make_unique<airball_sound_scheme>());
+
+    telemetry_read_thread_ = std::thread([&]() {
+      while (true) {
+        ITelemetry::Sample s = telemetry_->receiveSample();
+        if (std::holds_alternative<ITelemetry::Airdata>(s)) {
+          eventQueue()->enqueue([this, s]() {
+            airdata_->update(std::get<ITelemetry::Airdata>(s));
+          });
+        }
+      }
+    });
   }
+
+private:
+  std::unique_ptr<ISettings> settings_;
+  std::unique_ptr<IAirdata> airdata_;
+  std::unique_ptr<ITelemetry> telemetry_;
+  std::thread telemetry_read_thread_;
 };
 
 } // namespace airball

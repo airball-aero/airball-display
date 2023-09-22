@@ -3,6 +3,8 @@
 
 #include <vector>
 
+#include "telemetry/ITelemetry.h"
+
 namespace airball {
 
 class IAirdata {
@@ -24,6 +26,8 @@ public:
     double ias_;
     double tas_;
   };
+
+  virtual void update(ITelemetry::Airdata sample) = 0;
 
   virtual double altitude() const = 0;
   virtual double climb_rate() const = 0;

@@ -12,37 +12,13 @@ constexpr double kSamplesPerSecond = 20;
 constexpr static std::chrono::milliseconds
     kAirdataExpiryPeriod(250);
 
-Airdata::Airdata(IEventQueue* eventQueue,
-                 std::unique_ptr<ITelemetry> telemetry,
-                 ISettings* settings)
-    : eventQueue_(eventQueue),
-      telemetry_(std::move(telemetry)),
-      settings_(settings),
+Airdata::Airdata(ISettings* settings)
+    : settings_(settings),
       climb_rate_filter_(1),
       valid_(true),
       raw_balls_(kNumBalls),
       altitude_(0),
-      climb_rate_(0) {
-  start();
-}
-
-void Airdata::start() {
-  updateThread_ = std::thread([&]() {
-    while (true) {
-      ITelemetry::Sample s = telemetry_->receiveSample();
-      if (std::holds_alternative<ITelemetry::Airdata>(s)) {
-        eventQueue_->enqueue([this, s]() {
-          update(std::get<ITelemetry::Airdata>(s));
-        });
-      }
-    }
-  });
-}
-
-Airdata::~Airdata() {
-  // TODO: Not correct
-  updateThread_.join();
-}
+      climb_rate_(0) { }
 
 static double
 smooth(double current_value, double new_value, double time_constant) {
