@@ -14,6 +14,7 @@
 
 #include "../util/file_write_watch.h"
 #include "../util/one_shot_timer.h"
+#include "../util/string_compression.h"
 #include "rapidjson/writer.h"
 #include "rapidjson/prettywriter.h"
 #include "SettingsStore.h"
@@ -43,7 +44,7 @@ public:
       file_write_watch w(settingsFilePath_);
       while (true) {
         w.next_event();
-        eventQueue_->enqueue([&]() { settings_->load(); });
+        eventQueue_->enqueue([&]() { settings_->loadFromFile(); });
       }
     });
     if (!inputDevicePath_.empty()) {
@@ -51,9 +52,11 @@ public:
         while (true) {
           int f = open(inputDevicePath_.c_str(), O_RDONLY);
           if (f < 0) {
+            eventQueue_->enqueue([this]() { settings_->setAdjustmentKnobState(Settings::DISCONNECTED); });
             std::this_thread::sleep_for(kCancelDelay);
             continue;
           }
+          eventQueue_->enqueue([this]() { settings_->setAdjustmentKnobState(Settings::CONNECTED); });
           input_event e = {0};
           while (read(f, &e, sizeof(e)) == sizeof(e)) {
             switch (e.type) {
@@ -137,11 +140,14 @@ private:
 
 Settings::Settings(const std::string& settingsFilePath,
                    const std::string& inputDevicePath,
-                   IEventQueue *eventQueue)
+                   IEventQueue *eventQueue,
+                   std::function<void(ITelemetry::Sample)> sendSample)
     : path_(settingsFilePath),
-      loaded_(false),
+      sendSample_(sendSample),
+      loadedFromFile_(false),
       currentAdjustingVector_(nullptr),
-      currentAdjustingIndex_(0) {
+      currentAdjustingIndex_(0),
+      adjustmentKnobState_(UNKNOWN) {
   settingsEventSource_ = std::make_unique<SettingsEventSource>(
           settingsFilePath,
           inputDevicePath,
@@ -149,7 +155,7 @@ Settings::Settings(const std::string& settingsFilePath,
           this);
   store_ = std::make_unique<SettingsStore>();
   buildParamsVectors();
-  load();
+  loadFromFile();
 }
 
 void Settings::buildParamsVectors() {
@@ -187,28 +193,90 @@ void Settings::buildParamsVectors() {
 
 Settings::~Settings() {}
 
-void Settings::load() {
+void Settings::loadFromFile() {
   std::ifstream f;
   f.open(path_);
   std::stringstream s;
   s << f.rdbuf();
   f.close();
 
-  rapidjson::Document d;
-  d.SetObject();
-  d.Parse(s.str().c_str());
-  for (Parameter *p : store_->ALL_PARAMS) {
-    p->load(d);
-  }
+  loadFromString(s.str());
 
-  loaded_ = true;
+  loadedFromFile_ = true;
 }
 
-void Settings::save() {
-  if (!loaded_) {
+void Settings::saveToFile() {
+  if (!loadedFromFile_) {
     return;
   }
 
+  char tempFileName[kTempFileTemplate.length()];
+  strcpy(tempFileName, kTempFileTemplate.c_str());
+
+  if (mktemp(tempFileName) == nullptr) {
+    return;
+  }
+
+  {
+    std::ofstream f;
+    f.open(tempFileName);
+    f << saveToString();
+    f.flush();
+    f.close();
+  }
+
+  rename(tempFileName, path_.c_str());
+}
+
+void Settings::acceptCompressedSettings(ITelemetry::CompressedSettings sample) {
+  // When we are told of someone else's settings, we apply them if and only if we
+  // know that we are a settings follower.
+  if (adjustmentKnobState_ == DISCONNECTED) {
+    loadFromCompressedString(sample.value);
+    saveToFile();
+  }
+}
+
+void Settings::acceptSettingsRequest(ITelemetry::SettingsRequest sample) {
+  // When we are told of someone else's request for settings, we respond with our
+  // settings if and only if we know that we are the settings leader.
+  if (adjustmentKnobState_ == CONNECTED) {
+    sendSample_(ITelemetry::CompressedSettings { .value = saveToCompressedString() });
+  }
+}
+
+void Settings::setAdjustmentKnobState(AdjustmentKnobState s) {
+  // The first time we find out about a change of state, we respond:
+  // - If we are the settings leader, we transmit our settings.
+  // - If we are a settings follower, we ask for settings from others.
+  if (s != adjustmentKnobState_) {
+    adjustmentKnobState_ = s;
+    if (adjustmentKnobState_ == CONNECTED) {
+      sendSample_(ITelemetry::CompressedSettings { .value = saveToCompressedString() });
+    } else if (adjustmentKnobState_ == DISCONNECTED) {
+      sendSample_(ITelemetry::SettingsRequest {});
+    }
+  }
+}
+
+void Settings::loadFromCompressedString(std::string s) {
+  loadFromString(expandString(s));
+}
+
+std::string Settings::saveToCompressedString() {
+  return compressString(saveToString());
+}
+
+void Settings::loadFromString(std::string s) {
+  rapidjson::Document d;
+  d.SetObject();
+  d.Parse(s.c_str());
+  for (Parameter *p : store_->ALL_PARAMS) {
+    p->load(d);
+  }
+}
+
+std::string Settings::saveToString() {
   rapidjson::Document d;
   d.SetObject();
   for (Parameter *p : store_->ALL_PARAMS) {
@@ -219,20 +287,7 @@ void Settings::save() {
   rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(buffer);
   d.Accept(writer);
 
-  char tempFileName[kTempFileTemplate.length()];
-  strcpy(tempFileName, kTempFileTemplate.c_str());
-
-  if (mktemp(tempFileName) == nullptr) {
-    return;
-  }
-
-  std::ofstream f;
-  f.open(tempFileName);
-  f << buffer.GetString();
-  f.flush();
-  f.close();
-
-  rename(tempFileName, path_.c_str());
+  return buffer.GetString();
 }
 
 double Settings::ias_full_scale() const {
@@ -391,13 +446,13 @@ void Settings::nextAdjustment() {
 void Settings::hidIncrement() {
   startAdjustingShallow();
   (*currentAdjustingVector_)[currentAdjustingIndex_]->increment();
-  save();
+  saveToFile();
 }
 
 void Settings::hidDecrement() {
   startAdjustingShallow();
   (*currentAdjustingVector_)[currentAdjustingIndex_]->decrement();
-  save();
+  saveToFile();
 }
 
 void Settings::hidAdjustPressed() {

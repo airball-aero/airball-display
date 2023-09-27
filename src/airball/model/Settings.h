@@ -6,6 +6,7 @@
 #include "ISettings.h"
 #include <thread>
 #include "../../framework/IEventQueue.h"
+#include "telemetry/ITelemetry.h"
 
 namespace airball {
 
@@ -17,7 +18,8 @@ class Settings : public ISettings {
 public:
   Settings(const std::string& settingsFilePath,
            const std::string& inputDevicePath,
-           IEventQueue *eventQueue);
+           IEventQueue *eventQueue,
+           std::function<void(ITelemetry::Sample)> sendSample);
   virtual ~Settings();
 
   double ias_full_scale() const override;
@@ -63,8 +65,25 @@ public:
   void hidCancelTimerFired();
   void hidLongPressTimerFired();
 
-  void load();
-  void save();
+  void loadFromFile();
+  void saveToFile();
+
+  void acceptCompressedSettings(ITelemetry::CompressedSettings);
+  void acceptSettingsRequest(ITelemetry::SettingsRequest);
+
+  void loadFromCompressedString(std::string);
+  std::string saveToCompressedString();
+
+  void loadFromString(std::string);
+  std::string saveToString();
+
+  enum AdjustmentKnobState {
+    UNKNOWN,
+    DISCONNECTED,
+    CONNECTED,
+  };
+
+  void setAdjustmentKnobState(AdjustmentKnobState);
 
 private:
   void startAdjustingShallow();
@@ -73,7 +92,8 @@ private:
   void buildParamsVectors();
 
   std::string path_;
-  bool loaded_;
+  std::function<void(ITelemetry::Sample)> sendSample_;
+  bool loadedFromFile_;
   std::unique_ptr<SettingsEventSource> settingsEventSource_;
   std::unique_ptr<SettingsStore> store_;
 
@@ -81,6 +101,8 @@ private:
   std::vector<Parameter*> adjustmentParamsDeep_;
   std::vector<Parameter*>* currentAdjustingVector_;
   size_t currentAdjustingIndex_;
+
+  AdjustmentKnobState adjustmentKnobState_;
 };
 
 } // namespace airball

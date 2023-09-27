@@ -98,12 +98,15 @@ public:
 protected:
   void initialize() override {
     setFrameInterval(kFrameInterval);
+    telemetry_ = buildTelemetry();
     settings_ = std::make_unique<Settings>(
         FLAGS_settings_file_path,
         FLAGS_settings_input_device_path,
-        eventQueue());
+        eventQueue(),
+        [this](ITelemetry::Sample sample) {
+          telemetry_->sendSample(sample);
+        });
     setScreen(buildScreen(settings_.get()));
-    telemetry_ = buildTelemetry();
     airdata_ = std::make_unique<Airdata>(settings_.get());
     setModel(std::make_unique<AirballModel>(
         airdata_.get(),
@@ -120,12 +123,22 @@ protected:
             airdata_->update(std::get<ITelemetry::Airdata>(s));
           });
         }
+        if (std::holds_alternative<ITelemetry::CompressedSettings>(s)) {
+          eventQueue()->enqueue([this, s]() {
+            settings_->acceptCompressedSettings(std::get<ITelemetry::CompressedSettings>(s));
+          });
+        }
+        if (std::holds_alternative<ITelemetry::SettingsRequest>(s)) {
+          eventQueue()->enqueue([this, s]() {
+            settings_->acceptSettingsRequest(std::get<ITelemetry::SettingsRequest>(s));
+          });
+        }
       }
     });
   }
 
 private:
-  std::unique_ptr<ISettings> settings_;
+  std::unique_ptr<Settings> settings_;
   std::unique_ptr<IAirdata> airdata_;
   std::unique_ptr<ITelemetry> telemetry_;
   std::thread telemetry_read_thread_;
