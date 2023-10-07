@@ -240,9 +240,7 @@ void Settings::acceptCompressedSettings(ITelemetry::CompressedSettings sample) {
 void Settings::acceptSettingsRequest(ITelemetry::SettingsRequest sample) {
   // When we are told of someone else's request for settings, we respond with our
   // settings if and only if we know that we are the settings leader.
-  if (adjustmentKnobState_ == CONNECTED) {
-    sendSample_(ITelemetry::CompressedSettings { .value = saveToCompressedString() });
-  }
+  maybeSendSettings();
 }
 
 void Settings::setAdjustmentKnobState(AdjustmentKnobState s) {
@@ -251,10 +249,10 @@ void Settings::setAdjustmentKnobState(AdjustmentKnobState s) {
   // - If we are a settings follower, we ask for settings from others.
   if (s != adjustmentKnobState_) {
     adjustmentKnobState_ = s;
-    if (adjustmentKnobState_ == CONNECTED) {
-      sendSample_(ITelemetry::CompressedSettings { .value = saveToCompressedString() });
-    } else if (adjustmentKnobState_ == DISCONNECTED) {
+    if (adjustmentKnobState_ == DISCONNECTED) {
       sendSample_(ITelemetry::SettingsRequest {});
+    } else {
+      maybeSendSettings();
     }
   }
 }
@@ -288,6 +286,12 @@ std::string Settings::saveToString() {
   d.Accept(writer);
 
   return buffer.GetString();
+}
+
+void Settings::maybeSendSettings() {
+  if (adjustmentKnobState_ == CONNECTED) {
+    sendSample_(ITelemetry::CompressedSettings { .value = saveToCompressedString() });
+  }
 }
 
 double Settings::ias_full_scale() const {
@@ -447,12 +451,14 @@ void Settings::hidIncrement() {
   startAdjustingShallow();
   (*currentAdjustingVector_)[currentAdjustingIndex_]->increment();
   saveToFile();
+  maybeSendSettings();
 }
 
 void Settings::hidDecrement() {
   startAdjustingShallow();
   (*currentAdjustingVector_)[currentAdjustingIndex_]->decrement();
   saveToFile();
+  maybeSendSettings();  
 }
 
 void Settings::hidAdjustPressed() {
