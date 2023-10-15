@@ -3,12 +3,13 @@
 
 #include <cstddef>
 #include <string>
+#include <netinet/in.h>
 
 namespace airball {
 
 class UdpPacketReader {
 public:
-  explicit UdpPacketReader(int receive_port);
+  explicit UdpPacketReader(int receive_port, const std::string& receive_interface);
   ~UdpPacketReader();
 
   std::string read();
@@ -19,7 +20,9 @@ private:
   const static size_t kReceiveBufferLength = 1024;
 
   const int receive_port_;
+  const std::string receive_interface_;
   int socket_fd_;
+  struct in_addr my_address_;
   char receive_buffer_[kReceiveBufferLength];
 };
 

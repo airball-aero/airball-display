@@ -4,8 +4,8 @@
 
 namespace airball {
 
-UdpTelemetry::UdpTelemetry(std::string broadcastAddress, int udpPort)
-    : reader_(udpPort),
+UdpTelemetry::UdpTelemetry(std::string broadcastAddress, int udpPort, std::string networkInterface)
+    : reader_(udpPort, networkInterface),
       sender_(broadcastAddress, udpPort) {}
 
 ITelemetry::Sample

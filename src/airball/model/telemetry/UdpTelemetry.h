@@ -12,7 +12,7 @@ namespace airball {
 
 class UdpTelemetry : public ITelemetry {
 public:
-  UdpTelemetry(std::string broadcastAddress, int udpPort);
+  UdpTelemetry(std::string broadcastAddress, int udpPort, std::string networkInterface);
   ~UdpTelemetry() = default;
 
   Sample receiveSample() override;

@@ -33,7 +33,8 @@ const std::string kTelemetryLog = "log";
 const std::string kTelemetryFake = "fake";
 DEFINE_string(telemetry, kTelemetryFake, "Telemetry (udp, log, fake)");
 DEFINE_string(telemetry_udp_bcast, "192.168.4.255", "Broadcast address for UDP telemetry");
-DEFINE_uint32(telemetry_udp_port, 30123, "Listening port for UDP telemetry");
+DEFINE_uint32(telemetry_udp_port, 30123, "IP port for UDP telemetry");
+DEFINE_string(telemetry_udp_interface, "wlan0", "Interface for UDP telemetry");
 DEFINE_string(telemetry_log_path, "airball.log", "File path for log telemetry");
 
 DEFINE_string(sound_device, "hw:0", "ALSA sound device");
@@ -77,7 +78,9 @@ std::unique_ptr<IScreen> buildScreen(const ISettings* settings) {
 
 std::unique_ptr<ITelemetry> buildTelemetry() {
   if (FLAGS_telemetry == kTelemetryUdp) {
-    return std::make_unique<UdpTelemetry>(FLAGS_telemetry_udp_bcast, FLAGS_telemetry_udp_port);
+    return std::make_unique<UdpTelemetry>(FLAGS_telemetry_udp_bcast,
+                                          FLAGS_telemetry_udp_port,
+                                          FLAGS_telemetry_udp_interface);
   }
   if (FLAGS_telemetry == kTelemetryLog) {
     std::cerr << "Log telemetry is not yet supported, sorry!" << std::endl;

@@ -4,37 +4,52 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h>
-#include <strings.h>
+#include <cstring>
 
 namespace airball {
 
-UdpPacketSender::UdpPacketSender(std::string sendAddress, int sendPort)
-    : sendAddress_(sendAddress), sendPort_(sendPort), fd_(0) {
+UdpPacketSender::UdpPacketSender(std::string broadcast_ip, int broadcast_port)
+    : broadcast_ip_(broadcast_ip), broadcast_port_(broadcast_port), socket_fd_(0) {
   open();
 }
 
 bool UdpPacketSender::open() {
-  fd_ = socket(AF_INET, SOCK_DGRAM, 0);
-  if (fd_ < 0) {
+  socket_fd_ = socket(AF_INET, SOCK_DGRAM, 0);
+  if (socket_fd_ < 0) {
     return false;
   }
+
+  int broadcast_permission = 1;
+  int rc = setsockopt(socket_fd_,
+                      SOL_SOCKET,
+                      SO_BROADCAST,
+                      (void *) &broadcast_permission,
+                      sizeof(broadcast_permission));
+  if (rc < 0) {
+    return false;
+  }
+
+  memset(&broadcast_addr_, 0, sizeof(broadcast_addr_));
+  broadcast_addr_.sin_family = AF_INET;
+  broadcast_addr_.sin_addr.s_addr = inet_addr(broadcast_ip_.c_str());
+  broadcast_addr_.sin_port = htons(broadcast_port_);
+
   return true;
 }
 
 UdpPacketSender::~UdpPacketSender() {
-  if (fd_ != 0) {
-    close(fd_);
+  if (socket_fd_ != 0) {
+    close(socket_fd_);
   }
 }
 
 void UdpPacketSender::send(std::string str) {
-  sockaddr_in servaddr;
-  bzero(&servaddr,sizeof(servaddr));
-  servaddr.sin_family = AF_INET;
-  servaddr.sin_addr.s_addr = inet_addr(sendAddress_.c_str());
-  servaddr.sin_port = htons(sendPort_);
-  sendto(fd_, str.c_str(), str.size() + 1, 0,
-         (sockaddr*)&servaddr, sizeof(servaddr));
+  sendto(socket_fd_,
+         str.c_str(),
+         str.size(),
+         0,
+         (struct sockaddr *)&broadcast_addr_,
+         sizeof(broadcast_addr_));
 }
 
 }  // namespace airball
