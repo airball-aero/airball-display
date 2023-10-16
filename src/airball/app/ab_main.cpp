@@ -126,9 +126,9 @@ protected:
             airdata_->update(std::get<ITelemetry::Airdata>(s));
           });
         }
-        if (std::holds_alternative<ITelemetry::CompressedSettings>(s)) {
+        if (std::holds_alternative<ITelemetry::Settings>(s)) {
           eventQueue()->enqueue([this, s]() {
-            settings_->acceptCompressedSettings(std::get<ITelemetry::CompressedSettings>(s));
+            settings_->acceptSettings(std::get<ITelemetry::Settings>(s));
           });
         }
         if (std::holds_alternative<ITelemetry::SettingsRequest>(s)) {

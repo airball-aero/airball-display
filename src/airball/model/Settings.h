@@ -68,21 +68,18 @@ public:
   void loadFromFile();
   void saveToFile();
 
-  void acceptCompressedSettings(ITelemetry::CompressedSettings);
+  void acceptSettings(ITelemetry::Settings);
   void acceptSettingsRequest(ITelemetry::SettingsRequest);
 
   enum AdjustmentKnobState {
-    UNKNOWN,
-    DISCONNECTED,
-    CONNECTED,
+    UNKNOWN = 0,
+    DISCONNECTED = 1,
+    CONNECTED = 2,
   };
 
   void setAdjustmentKnobState(AdjustmentKnobState);
 
 private:
-  void loadFromCompressedString(std::string);
-  std::string saveToCompressedString();
-
   void loadFromString(std::string);
   std::string saveToString();
 

@@ -75,8 +75,7 @@ std::string UdpPacketReader::read() {
       continue;
     }
 
-    receive_buffer_[result] = '\0';
-    return receive_buffer_;
+    return std::string(receive_buffer_, result);
   }
 }
 

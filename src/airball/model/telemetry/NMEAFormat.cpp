@@ -10,7 +10,7 @@ constexpr int kCommaLen = 1;
 
 const std::string kAirdata = "$AR";
 const std::string kSettingsRequest = "$SR";
-const std::string kCompressedSettings = "$CS";
+const std::string kSettings = "$SS";
 
 std::vector<std::string> split_comma(const std::string &s) {
   std::vector<std::string> tokens;
@@ -24,7 +24,8 @@ std::vector<std::string> split_comma(const std::string &s) {
 }
 
 ITelemetry::Sample
-parseAirdata(const std::vector<std::string> &tokens) {
+parseAirdata(const std::string &message,
+             const std::vector<std::string> &tokens) {
   return ITelemetry::Airdata {
       .sequence = (unsigned long) atoi(tokens[1].c_str()),
       .alpha = atof(tokens[2].c_str()),
@@ -36,14 +37,16 @@ parseAirdata(const std::vector<std::string> &tokens) {
 }
 
 ITelemetry::Sample
-parseSettingsRequest(const std::vector<std::string> &tokens) {
+parseSettingsRequest(const std::string& message,
+                     const std::vector<std::string> &tokens) {
   return ITelemetry::SettingsRequest {};
 }
 
 ITelemetry::Sample
-parseCompressedSettings(const std::vector<std::string> &tokens) {
-  return ITelemetry::CompressedSettings {
-    .value = tokens[1],
+parseSettings(const std::string& message,
+              const std::vector<std::string> &tokens) {
+  return ITelemetry::Settings {
+    .value = message.substr(4),
   };
 }
 
@@ -52,13 +55,13 @@ NMEAFormat::unmarshal(const std::string &message) {
   auto tokens = split_comma(message);
   if (!tokens.empty()) {
     if (tokens[0] == kAirdata) {
-      return parseAirdata(tokens);
+      return parseAirdata(message, tokens);
     }
     if (tokens[0] == kSettingsRequest) {
-      return parseSettingsRequest(tokens);
+      return parseSettingsRequest(message, tokens);
     }
-    if (tokens[0] == kCompressedSettings) {
-      return parseCompressedSettings(tokens);
+    if (tokens[0] == kSettings) {
+      return parseSettings(message, tokens);
     }
   }
   return ITelemetry::Unknown {};
@@ -85,9 +88,9 @@ marshalSettingsRequest(ITelemetry::SettingsRequest o) {
 }
 
 std::string
-marshalCompressedSettings(ITelemetry::CompressedSettings o) {
+marshalCompressedSettings(ITelemetry::Settings o) {
   std::stringstream s;
-  s << kCompressedSettings << ","
+  s << kSettings << ","
     << o.value;
   return s.str();
 }
@@ -100,8 +103,8 @@ NMEAFormat::marshal(ITelemetry::Sample s) {
   if (std::holds_alternative<ITelemetry::SettingsRequest>(s)) {
     return marshalSettingsRequest(std::get<ITelemetry::SettingsRequest>(s));
   }
-  if (std::holds_alternative<ITelemetry::CompressedSettings>(s)) {
-    return marshalCompressedSettings(std::get<ITelemetry::CompressedSettings>(s));
+  if (std::holds_alternative<ITelemetry::Settings>(s)) {
+    return marshalCompressedSettings(std::get<ITelemetry::Settings>(s));
   }
   return "";
 }

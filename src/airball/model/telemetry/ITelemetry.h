@@ -30,11 +30,11 @@ public:
   struct SettingsRequest {
   };
 
-  struct CompressedSettings {
+  struct Settings {
     std::string value;
   };
 
-  typedef std::variant<Unknown, Airdata, Battery, SettingsRequest, CompressedSettings> Sample;
+  typedef std::variant<Unknown, Airdata, Battery, SettingsRequest, Settings> Sample;
 
   virtual Sample receiveSample() = 0;
   virtual void sendSample(Sample s) = 0;

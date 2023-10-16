@@ -14,7 +14,6 @@
 
 #include "../util/file_write_watch.h"
 #include "../util/one_shot_timer.h"
-#include "../util/string_compression.h"
 #include "rapidjson/writer.h"
 #include "rapidjson/prettywriter.h"
 #include "SettingsStore.h"
@@ -47,60 +46,58 @@ public:
         eventQueue_->enqueue([&]() { settings_->loadFromFile(); });
       }
     });
-    if (!inputDevicePath_.empty()) {
-      inputThread_ = std::thread([this]() {
-        while (true) {
-          int f = open(inputDevicePath_.c_str(), O_RDONLY);
-          if (f < 0) {
-            eventQueue_->enqueue([this]() { settings_->setAdjustmentKnobState(Settings::DISCONNECTED); });
-            std::this_thread::sleep_for(kCancelDelay);
-            continue;
-          }
-          eventQueue_->enqueue([this]() { settings_->setAdjustmentKnobState(Settings::CONNECTED); });
-          input_event e = {0};
-          while (read(f, &e, sizeof(e)) == sizeof(e)) {
-            switch (e.type) {
-              case EV_KEY:
-                switch (e.code) {
-                  case KEY_VOLUMEUP:
-                    if (e.value == 0) {
-                      eventQueue_->enqueue([this]() { settings_->hidIncrement(); });
-                      restartCancelTimer();
-                    }
-                    break;
-                  case KEY_VOLUMEDOWN:
-                    if (e.value == 0) {
-                      eventQueue_->enqueue([this]() { settings_->hidDecrement(); });
-                      restartCancelTimer();
-                    }
-                    break;
-                  case KEY_PLAYPAUSE:
-                    switch (e.value) {
-                      case 0:
-                        eventQueue_->enqueue([this]() { settings_->hidAdjustReleased(); });
-                        restartCancelTimer();
-                        stopLongPressTimer();
-                        break;
-                      case 1:
-                        eventQueue_->enqueue([this]() { settings_->hidAdjustPressed(); });
-                        restartCancelTimer();
-                        restartLongPressTimer();
-                        break;
-                      default:
-                        break;
-                    }
-                    break;
-                  default:
-                    break;
-                }
-              default:
-                break;
-            }
-          }
-          close(f);
+    inputThread_ = std::thread([this]() {
+      while (true) {
+        int f = open(inputDevicePath_.c_str(), O_RDONLY);
+        if (f < 0) {
+          eventQueue_->enqueue([this]() { settings_->setAdjustmentKnobState(Settings::DISCONNECTED); });
+          std::this_thread::sleep_for(kCancelDelay);
+          continue;
         }
-      });
-    }
+        eventQueue_->enqueue([this]() { settings_->setAdjustmentKnobState(Settings::CONNECTED); });
+        input_event e = {0};
+        while (read(f, &e, sizeof(e)) == sizeof(e)) {
+          switch (e.type) {
+            case EV_KEY:
+              switch (e.code) {
+                case KEY_VOLUMEUP:
+                  if (e.value == 0) {
+                    eventQueue_->enqueue([this]() { settings_->hidIncrement(); });
+                    restartCancelTimer();
+                  }
+                  break;
+                case KEY_VOLUMEDOWN:
+                  if (e.value == 0) {
+                    eventQueue_->enqueue([this]() { settings_->hidDecrement(); });
+                    restartCancelTimer();
+                  }
+                  break;
+                case KEY_PLAYPAUSE:
+                  switch (e.value) {
+                    case 0:
+                      eventQueue_->enqueue([this]() { settings_->hidAdjustReleased(); });
+                      restartCancelTimer();
+                      stopLongPressTimer();
+                      break;
+                    case 1:
+                      eventQueue_->enqueue([this]() { settings_->hidAdjustPressed(); });
+                      restartCancelTimer();
+                      restartLongPressTimer();
+                      break;
+                    default:
+                      break;
+                  }
+                  break;
+                default:
+                  break;
+              }
+            default:
+              break;
+          }
+        }
+        close(f);
+      }
+    });
   }
 
   void restartCancelTimer() {
@@ -228,11 +225,11 @@ void Settings::saveToFile() {
   rename(tempFileName, path_.c_str());
 }
 
-void Settings::acceptCompressedSettings(ITelemetry::CompressedSettings sample) {
+void Settings::acceptSettings(ITelemetry::Settings settings) {
   // When we are told of someone else's settings, we apply them if and only if we
   // know that we are a settings follower.
   if (adjustmentKnobState_ == DISCONNECTED) {
-    loadFromCompressedString(sample.value);
+    loadFromString(settings.value);
     saveToFile();
   }
 }
@@ -255,14 +252,6 @@ void Settings::setAdjustmentKnobState(AdjustmentKnobState s) {
       maybeSendSettings();
     }
   }
-}
-
-void Settings::loadFromCompressedString(std::string s) {
-  loadFromString(expandString(s));
-}
-
-std::string Settings::saveToCompressedString() {
-  return compressString(saveToString());
 }
 
 void Settings::loadFromString(std::string s) {
@@ -290,7 +279,7 @@ std::string Settings::saveToString() {
 
 void Settings::maybeSendSettings() {
   if (adjustmentKnobState_ == CONNECTED) {
-    sendSample_(ITelemetry::CompressedSettings { .value = saveToCompressedString() });
+    sendSample_(ITelemetry::Settings { .value = saveToString() });
   }
 }
 
