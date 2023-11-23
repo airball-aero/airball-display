@@ -2,7 +2,8 @@ add_library(util
         LinearRateFilter.cpp
         file_write_watch.cpp
         one_shot_timer.cpp
-        string_compression.cpp)
+        string_compression.cpp
+        atomic_store.cpp)
 target_link_libraries(util
         z)
 
@@ -24,4 +25,9 @@ target_link_libraries(one_shot_timer_test
 add_executable(string_compression_test
         string_compression_test.cpp)
 target_link_libraries(string_compression_test
+        util)
+
+add_executable(atomic_store_test
+        atomic_store_test_main.cpp)
+target_link_libraries(atomic_store_test
         util)
