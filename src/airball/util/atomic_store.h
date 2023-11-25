@@ -11,6 +11,7 @@ public:
   AtomicStore(const std::string& path);
 
   void initialize(size_t page_size, size_t bank_size);
+  bool is_initialized();
 
   size_t page_size();
   size_t bank_size();
@@ -25,7 +26,10 @@ public:
 private:
   struct Header;
 
+  std::shared_ptr<Header> read_correct_header();
   std::shared_ptr<Header> read_header();
+  bool is_correct(Header* header);
+
   size_t bank_offset(Header* header, uint8_t bank);
   void write_raw(size_t offset, const char* data, size_t length);
   void read_raw(size_t offset, char* data, size_t length);
