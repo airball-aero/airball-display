@@ -24,6 +24,9 @@ int main(int arg, char** argv) {
   ASSERT_TRUE(s.page_size() == 32);
   ASSERT_TRUE(s.bank_size() == 128);
   ASSERT_TRUE(s.bank() == 0);
+  ASSERT_TRUE(s.read_payload() == "");
+  ASSERT_TRUE(s.read_payload(0) == "");
+  ASSERT_TRUE(s.read_payload(1) == "");
 
   s.write_payload("Hello world one");
 
