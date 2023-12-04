@@ -1,6 +1,7 @@
-#include <cassert>
 #include <cstring>
 #include <vector>
+#include <unistd.h>
+#include <iostream>
 
 #include "atomic_store.h"
 
@@ -19,6 +20,8 @@ struct AtomicStore::Header {
   uint8_t bank;
   uint32_t magic_number_1;
 };
+
+#define CHECK(x) if (!(x)) { std::cout << "Check failed " << __FILE__ << ":" << __LINE__ << std::endl; exit(-1); }
 
 AtomicStore::AtomicStore(const std::string &path) : path_(path) {}
 
@@ -59,7 +62,7 @@ void AtomicStore::write_payload(const std::string& data) {
 }
 
 void AtomicStore::write_payload(uint8_t bank, const std::string& data) {
-  assert(bank == 0 || bank == 1);
+  CHECK(bank == 0 || bank == 1);
   std::shared_ptr<Header> h = read_correct_header();
   write_raw(bank_offset(h.get(), bank), data.c_str(), data.size());
   write_bank_number(bank);
@@ -73,7 +76,7 @@ std::string AtomicStore::read_payload() {
 }
 
 std::string AtomicStore::read_payload(uint8_t bank) {
-  assert(bank == 0 || bank == 1);
+  CHECK(bank == 0 || bank == 1);
   std::shared_ptr<Header> h = read_correct_header();
   char data[h->bank_size];
   read_raw(bank_offset(h.get(), bank), data, h->bank_size);
@@ -82,7 +85,7 @@ std::string AtomicStore::read_payload(uint8_t bank) {
 
 std::shared_ptr<AtomicStore::Header> AtomicStore::read_correct_header() {
   auto header = read_header();
-  assert(is_correct(header.get()));
+  CHECK(is_correct(header.get()));
   return header;
 }
 
@@ -106,19 +109,19 @@ size_t AtomicStore::bank_offset(Header* header, uint8_t bank) {
 
 void AtomicStore::write_raw(size_t offset, const char* data, size_t length) {
   FILE *f = fopen(path_.c_str(), "rb+");
-  assert(f != nullptr);
-  assert(fseek(f, offset, SEEK_SET) >= 0);
-  assert(fwrite(data, sizeof(char), length, f) == length);
-  assert(fsync(f->_fileno) >= 0);
-  assert(fclose(f) >= 0);
+  CHECK(f != nullptr);
+  CHECK(fseek(f, offset, SEEK_SET) >= 0);
+  CHECK(fwrite(data, sizeof(char), length, f) == length);
+  CHECK(fsync(f->_fileno) >= 0);
+  CHECK(fclose(f) >= 0);
 }
 
 void AtomicStore::read_raw(size_t offset, char* data, size_t length) {
   FILE *f = fopen(path_.c_str(), "rb+");
-  assert(f != nullptr);
-  assert(fseek(f, offset, SEEK_SET) >= 0);
-  assert(fread(data, sizeof(char), length, f) == length);
-  assert(fclose(f) >= 0);
+  CHECK(f != nullptr);
+  CHECK(fseek(f, offset, SEEK_SET) >= 0);
+  CHECK(fread(data, sizeof(char), length, f) == length);
+  CHECK(fclose(f) >= 0);
 }
 
 void AtomicStore::write_bank_number(char bank) {
