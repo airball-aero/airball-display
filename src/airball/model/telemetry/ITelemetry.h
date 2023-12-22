@@ -20,13 +20,6 @@ public:
     double t;
   };
 
-  struct Battery {
-    unsigned long sequence;
-    double battery_voltage;
-    double battery_current;
-    double battery_capacity_pct;
-  };
-
   struct SettingsRequest {
   };
 
@@ -34,7 +27,7 @@ public:
     std::string value;
   };
 
-  typedef std::variant<Unknown, Airdata, Battery, SettingsRequest, Settings> Sample;
+  typedef std::variant<Unknown, Airdata, SettingsRequest, Settings> Sample;
 
   virtual Sample receiveSample() = 0;
   virtual void sendSample(Sample s) = 0;
