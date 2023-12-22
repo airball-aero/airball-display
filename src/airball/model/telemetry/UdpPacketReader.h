@@ -2,6 +2,7 @@
 #define AIRBALL_TELEMETRY_UDP_PACKET_READER_H
 
 #include <cstddef>
+#include <chrono>
 #include <string>
 #include <netinet/in.h>
 
@@ -11,6 +12,8 @@ class UdpPacketReader {
 public:
   explicit UdpPacketReader(int receive_port, const std::string& receive_interface);
   ~UdpPacketReader();
+
+  bool poll(std::chrono::duration<int, std::milli> timeout);
 
   std::string read();
 

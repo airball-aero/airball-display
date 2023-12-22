@@ -8,6 +8,7 @@
 #include <cstring>
 #include <sys/ioctl.h>
 #include <bits/ioctls.h>
+#include <poll.h>
 
 struct in_addr getMyIpAddress(const std::string& receive_interface) {
   int fd = socket(AF_INET, SOCK_DGRAM, 0);
@@ -55,6 +56,18 @@ bool UdpPacketReader::open() {
   }
 
   return true;
+}
+
+bool UdpPacketReader::poll(std::chrono::duration<int, std::milli> timeout) {
+  struct pollfd pfd {
+    .fd = socket_fd_,
+    .events = POLLIN | POLLPRI,
+    .revents = 0,
+  };
+  ::poll(&pfd, 1, timeout.count());
+  return
+      (pfd.revents | POLLIN) ||
+      (pfd.revents | POLLPRI);
 }
 
 std::string UdpPacketReader::read() {
