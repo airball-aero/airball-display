@@ -27,7 +27,7 @@ public:
     double tas_;
   };
 
-  virtual void update(ITelemetry::Airdata sample) = 0;
+  virtual void update(ITelemetry::Message message) = 0;
 
   virtual double altitude() const = 0;
   virtual double climb_rate() const = 0;

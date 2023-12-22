@@ -2,6 +2,7 @@
 
 #include "aerodynamics.h"
 #include "../util/units.h"
+#include "telemetry/TelemetryIds.h"
 
 #include <iostream>
 
@@ -12,6 +13,64 @@ constexpr double kSamplesPerSecond = 20;
 constexpr static std::chrono::milliseconds
     kAirdataExpiryPeriod(250);
 
+template <class T>
+class AssignOnceValue {
+public:
+  AssignOnceValue() : assigned_(false) {}
+
+  void set(T v) {
+    if (!assigned_) {
+      v_ = v;
+    }
+  }
+
+  T get() {
+    return v_;
+  }
+
+  bool assigned() {
+    return assigned_;
+  }
+
+private:
+  bool assigned_;
+  T v_;
+};
+
+struct RawData {
+  explicit RawData(uint16_t _seq) : seq(_seq) {}
+
+  bool assigned() {
+    return
+        alpha.assigned() &&
+        beta.assigned() &&
+        q.assigned() &&
+        p.assigned() &&
+        t.assigned();
+  }
+
+  const uint16_t seq;
+
+  AssignOnceValue<double> alpha;
+  AssignOnceValue<double> beta;
+  AssignOnceValue<double> q;
+  AssignOnceValue<double> p;
+  AssignOnceValue<double> t;
+};
+
+struct AirdataMessage {
+  uint16_t id;
+  uint32_t seq;
+  float value;
+};
+
+AirdataMessage toAirdataMessage(ITelemetry::Message message) {
+  AirdataMessage r;
+  r.id = message.id;
+  r.seq = *((uint32_t *) message.data);
+  r.value = *((float *) (message.data + 4));
+}
+
 Airdata::Airdata(ISettings* settings)
     : settings_(settings),
       climb_rate_filter_(1),
@@ -21,37 +80,73 @@ Airdata::Airdata(ISettings* settings)
       climb_rate_(0) { }
 
 static double
-smooth(double current_value, double new_value, double time_constant) {
-  double sample_time = 1.0 / kSamplesPerSecond;
-  double factor = exp(-1.0 * sample_time / time_constant);
+smooth(double current_value, double new_value, double delta_t, double time_constant) {
+  double factor = exp(-1.0 * delta_t / time_constant);
   return ((1.0 - factor) * new_value) + (factor * current_value);
 }
 
-void Airdata::update(const ITelemetry::Airdata d) {
-  update(
-      degrees_to_radians(d.alpha),
-      degrees_to_radians(d.beta),
-      d.q,
-      d.p,
-      d.t,
-      settings_->baro_setting() * kPascalsPerInHg,
-      settings_->ball_time_constant(),
-      settings_->vsi_time_constant());
+void Airdata::update(const ITelemetry::Message message) {
+  switch (message.id) {
+    case TelemetryIds::AIRDATA_ALPHA:
+    case TelemetryIds::AIRDATA_BETA:
+    case TelemetryIds::AIRDATA_Q:
+    case TelemetryIds::AIRDATA_P:
+    case TelemetryIds::AIRDATA_T:
+      break;
+    default:
+      return;
+  }
+
+  AirdataMessage am = toAirdataMessage(message);
+
+  if (raw_ == nullptr || raw_->seq != am.seq) {
+    raw_ = std::make_unique<RawData>(message.id);
+  }
+
+  switch (am.id) {
+    case TelemetryIds::AIRDATA_ALPHA:
+      raw_->alpha.set(am.value);
+      break;
+    case TelemetryIds::AIRDATA_BETA:
+      raw_->beta.set(am.value);
+      break;
+    case TelemetryIds::AIRDATA_Q:
+      raw_->q.set(am.value);
+      break;
+    case TelemetryIds::AIRDATA_P:
+      raw_->p.set(am.value);
+      break;
+    case TelemetryIds::AIRDATA_T:
+      raw_->t.set(am.value);
+      break;
+    default:
+      // Should never happen
+      return;
+  }
+
+  if (raw_->assigned()) {
+    update(
+        settings_->baro_setting() * kPascalsPerInHg,
+        settings_->ball_time_constant(),
+        settings_->vsi_time_constant());
+  }
 }
 
 void Airdata::update(
-    const double alpha,
-    const double beta,
-    const double q,
-    const double p,
-    const double t,
     const double qnh,
     const double ball_time_constant,
     const double vsi_time_constant) {
-  double q_corr = q * settings_->q_correction_factor();
+  auto now = std::chrono::system_clock::now();
+  double delta_t = std::chrono::duration<double>(now - lastUpdateTime_).count();
+  lastUpdateTime_ = now;
+
+  double q_corr = raw_->q.get() * settings_->q_correction_factor();
 
   double new_ias = q_to_ias(q_corr);
-  double new_tas = q_to_tas(q_corr, p, t);
+  double new_tas = q_to_tas(q_corr, raw_->p.get(), raw_->t.get());
+
+  double alpha = degrees_to_radians(raw_->alpha.get());
+  double beta = degrees_to_radians(raw_->beta.get());
 
   // If we allow NaN's to get through, they will "pollute" the smoothing
   // computation and every smoothed value thereafter will be NaN. This guard
@@ -62,17 +157,17 @@ void Airdata::update(
   new_tas = isnan(new_tas) ? smooth_ball_.tas() : new_tas;
 
   smooth_ball_ = Ball(
-      smooth(smooth_ball_.alpha(), alpha, ball_time_constant),
-      smooth(smooth_ball_.beta(), beta, ball_time_constant),
-      smooth(smooth_ball_.ias(), new_ias, ball_time_constant),
-      smooth(smooth_ball_.tas(), new_tas, ball_time_constant));
+      smooth(smooth_ball_.alpha(), alpha, delta_t, ball_time_constant),
+      smooth(smooth_ball_.beta(), beta, delta_t, ball_time_constant),
+      smooth(smooth_ball_.ias(), new_ias, delta_t, ball_time_constant),
+      smooth(smooth_ball_.tas(), new_tas, delta_t, ball_time_constant));
 
   for (size_t i = raw_balls_.size() - 1; i > 0; i--) {
     raw_balls_[i] = raw_balls_[i - 1];
   }
   raw_balls_[0] = Ball(new_alpha, new_beta, new_ias, new_tas);
 
-  pressure_altitude_ = pressure_to_altitude(t, p, QNH_STANDARD);
+  pressure_altitude_ = pressure_to_altitude(raw_->t.get(), raw_->p.get(), QNH_STANDARD);
 
   int climbRateFilterSize = vsi_time_constant * kSamplesPerSecond;
   if (climbRateFilterSize != climb_rate_filter_.size()) {
@@ -82,10 +177,9 @@ void Airdata::update(
   climb_rate_filter_.put(pressure_altitude_);
   climb_rate_ = climb_rate_filter_.rate() / (1.0 / kSamplesPerSecond);
 
-  altitude_ = pressure_to_altitude(t, p, qnh);
+  altitude_ = pressure_to_altitude(raw_->t.get(), raw_->p.get(), qnh);
 
   valid_ = !isnan(alpha) && !isnan(beta);
-  lastUpdateTime_ = std::chrono::system_clock::now();
 }
 
 bool Airdata::valid() const {

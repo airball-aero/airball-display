@@ -1,21 +1,18 @@
 #include "Settings.h"
 
-#include <rapidjson/document.h>
-#include <fstream>
-#include <sstream>
 #include <fcntl.h>
-#include <stdlib.h>
 #include <unistd.h>
+#include <mutex>
 
 #include <linux/input.h>
 #include <linux/input-event-codes.h>
-#include <iostream>
-#include <mutex>
 
+#include <rapidjson/document.h>
+#include "rapidjson/writer.h"
+
+#include "../util/atomic_store.h"
 #include "../util/file_write_watch.h"
 #include "../util/one_shot_timer.h"
-#include "rapidjson/writer.h"
-#include "rapidjson/prettywriter.h"
 #include "SettingsStore.h"
 
 namespace airball {
@@ -23,7 +20,8 @@ namespace airball {
 const auto kCancelDelay = std::chrono::milliseconds(5000);
 const auto kLongPressDelay = std::chrono::milliseconds (2000);
 
-const std::string kTempFileTemplate("airball-settings.json.XXXXXX");
+const size_t kStorePageSize =   256;
+const size_t kStoreBankSize = 16384;
 
 // A SettingsEventSource handles all the asynchronous operations to listen for HID
 // events from input devices, timeouts, and all that stuff. It is responsible for
@@ -138,9 +136,9 @@ private:
 Settings::Settings(const std::string& settingsFilePath,
                    const std::string& inputDevicePath,
                    IEventQueue *eventQueue,
-                   std::function<void(ITelemetry::Sample)> sendSample)
+                   std::function<void(ITelemetry::Message)> sendMessage)
     : path_(settingsFilePath),
-      sendSample_(sendSample),
+      sendMessage_(sendMessage),
       loadedFromFile_(false),
       currentAdjustingVector_(nullptr),
       currentAdjustingIndex_(0),
@@ -191,53 +189,30 @@ void Settings::buildParamsVectors() {
 Settings::~Settings() {}
 
 void Settings::loadFromFile() {
-  std::ifstream f;
-  f.open(path_);
-  std::stringstream s;
-  s << f.rdbuf();
-  f.close();
-
-  loadFromString(s.str());
-
+  AtomicStore s(path_);
+  s.initialize(kStorePageSize, kStoreBankSize);
+  loadFromString(s.read_payload());
   loadedFromFile_ = true;
 }
 
 void Settings::saveToFile() {
-  if (!loadedFromFile_) {
-    return;
-  }
-
-  char tempFileName[kTempFileTemplate.length()];
-  strcpy(tempFileName, kTempFileTemplate.c_str());
-
-  if (mktemp(tempFileName) == nullptr) {
-    return;
-  }
-
-  {
-    std::ofstream f;
-    f.open(tempFileName);
-    f << saveToString();
-    f.flush();
-    f.close();
-  }
-
-  rename(tempFileName, path_.c_str());
-}
-
-void Settings::acceptSettings(ITelemetry::Settings settings) {
-  // When we are told of someone else's settings, we apply them if and only if we
-  // know that we are a settings follower.
-  if (adjustmentKnobState_ == DISCONNECTED) {
-    loadFromString(settings.value);
-    saveToFile();
+  if (loadedFromFile_) {
+    AtomicStore s(path_);
+    s.initialize(kStorePageSize, kStoreBankSize);
+    s.write_payload(saveToString());
   }
 }
 
-void Settings::acceptSettingsRequest(ITelemetry::SettingsRequest sample) {
-  // When we are told of someone else's request for settings, we respond with our
-  // settings if and only if we know that we are the settings leader.
-  maybeSendSettings();
+void Settings::acceptMessage(ITelemetry::Message message) {
+  if (message.id == TelemetryIds::SETTINGS_REQUEST) {
+    maybeSendSettings();
+  } else {
+    for (auto p: store_->ALL_PARAMS) {
+      if (p->message_id() == message.id) {
+        p->fromMessage(message);
+      }
+    }
+  }
 }
 
 void Settings::setAdjustmentKnobState(AdjustmentKnobState s) {
@@ -247,7 +222,10 @@ void Settings::setAdjustmentKnobState(AdjustmentKnobState s) {
   if (s != adjustmentKnobState_) {
     adjustmentKnobState_ = s;
     if (adjustmentKnobState_ == DISCONNECTED) {
-      sendSample_(ITelemetry::SettingsRequest {});
+      sendMessage_(ITelemetry::Message {
+        .id = TelemetryIds::SETTINGS_REQUEST,
+        .data = { 0 },
+      });
     } else {
       maybeSendSettings();
     }
@@ -271,7 +249,7 @@ std::string Settings::saveToString() {
   }
 
   rapidjson::StringBuffer buffer;
-  rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(buffer);
+  rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
   d.Accept(writer);
 
   return buffer.GetString();
@@ -279,7 +257,9 @@ std::string Settings::saveToString() {
 
 void Settings::maybeSendSettings() {
   if (adjustmentKnobState_ == CONNECTED) {
-    sendSample_(ITelemetry::Settings { .value = saveToString() });
+    for (auto p : store_->ALL_PARAMS) {
+      sendMessage_(p->toMessage());
+    }
   }
 }
 

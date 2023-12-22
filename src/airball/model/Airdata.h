@@ -11,6 +11,8 @@
 
 namespace airball {
 
+struct RawData;
+
 class Airdata : public IAirdata {
 public:
   Airdata(ISettings* settings);
@@ -24,23 +26,19 @@ public:
   [[nodiscard]] const Ball& smooth_ball() const override { return smooth_ball_; }
   [[nodiscard]] const std::vector<Ball>& raw_balls() const override { return raw_balls_; }
 
-  void update(ITelemetry::Airdata sample) override;
+  void update(ITelemetry::Message message) override;
 
 private:
   void update(
-      double alpha,
-      double beta,
-      double q,
-      double p,
-      double t,
       double qnh,
       double ball_time_constant,
       double vsi_time_constant);
 
-  static constexpr int kSlineReaderamplesPerSecond = 20;
   static constexpr uint kNumBalls = 20;
 
   ISettings* settings_;
+
+  std::unique_ptr<RawData> raw_;
 
   bool valid_;
   std::chrono::system_clock::time_point lastUpdateTime_;

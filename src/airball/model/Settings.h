@@ -19,7 +19,7 @@ public:
   Settings(const std::string& settingsFilePath,
            const std::string& inputDevicePath,
            IEventQueue *eventQueue,
-           std::function<void(ITelemetry::Sample)> sendSample);
+           std::function<void(ITelemetry::Message)> sendMessage);
   virtual ~Settings();
 
   double ias_full_scale() const override;
@@ -68,8 +68,7 @@ public:
   void loadFromFile();
   void saveToFile();
 
-  void acceptSettings(ITelemetry::Settings);
-  void acceptSettingsRequest(ITelemetry::SettingsRequest);
+  void acceptMessage(ITelemetry::Message);
 
   enum AdjustmentKnobState {
     UNKNOWN = 0,
@@ -91,7 +90,7 @@ private:
   void buildParamsVectors();
 
   std::string path_;
-  std::function<void(ITelemetry::Sample)> sendSample_;
+  std::function<void(ITelemetry::Message)> sendMessage_;
   bool loadedFromFile_;
   std::unique_ptr<SettingsEventSource> settingsEventSource_;
   std::unique_ptr<SettingsStore> store_;

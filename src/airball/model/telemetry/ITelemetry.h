@@ -1,5 +1,5 @@
-#ifndef AIRBALL_TELEMETRY_TELEMETRY_SAMPLE_H
-#define AIRBALL_TELEMETRY_TELEMETRY_SAMPLE_H
+#ifndef AIRBALL_TELEMETRY_ITELEMETRY_H
+#define AIRBALL_TELEMETRY_ITELEMETRY_H
 
 #include <string>
 #include <variant>
@@ -8,31 +8,18 @@ namespace airball {
 
 class ITelemetry {
 public:
-  struct Unknown {
+  struct Message {
+    uint16_t id;
+    uint8_t data[8];
   };
 
-  struct Airdata {
-    unsigned long sequence;
-    double alpha;
-    double beta;
-    double q;
-    double p;
-    double t;
-  };
+  // Receive the next Message. Blocks until a Message is received.
+  virtual Message receiveMessage() = 0;
 
-  struct SettingsRequest {
-  };
-
-  struct Settings {
-    std::string value;
-  };
-
-  typedef std::variant<Unknown, Airdata, SettingsRequest, Settings> Sample;
-
-  virtual Sample receiveSample() = 0;
-  virtual void sendSample(Sample s) = 0;
+  // Send a Message. This is broadcast to everyone on the network.
+  virtual void sendMessage(Message s) = 0;
 };
 
 }  // namespace airball
 
-#endif  // AIRBALL_TELEMETRY_TELEMETRY_SAMPLE_H
+#endif // AIRBALL_TELEMETRY_ITELEMETRY_H
