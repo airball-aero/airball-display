@@ -4,7 +4,7 @@
 #include <thread>
 #include <math.h>
 
-#include <iostream>
+#include "TelemetryIds.h"
 
 namespace airball {
 
@@ -14,16 +14,6 @@ const static auto kPeriodAirdata = std::chrono::milliseconds (5000);
 struct Model {
   const double min;
   const double max;
-};
-
-constexpr static Model kAirdataBaro {
-    .min = 40000,
-    .max = 70000,
-};
-
-constexpr static Model kAirdataOat {
-    .min =   0,
-    .max =  20,
 };
 
 constexpr static Model kAirdataAlpha {
@@ -41,6 +31,16 @@ constexpr static Model kAirdataQ {
     .max = 1300,
 };
 
+constexpr static Model kAirdataP {
+    .min = 40000,
+    .max = 70000,
+};
+
+constexpr static Model kAirdataT {
+    .min =   0,
+    .max =  20,
+};
+
 double interpolate_value(double phase_ratio, const Model &m) {
   double factor = (sin(phase_ratio * 2.0 * M_PI) + 1.0) / 2.0;
   return m.min + factor * (m.max - m.min);
@@ -53,27 +53,64 @@ double compute_phase_ratio() {
   return (double) (t.count() % kPeriodAirdata.count()) / (double) kPeriodAirdata.count();
 }
 
-ITelemetry::Sample make_airdata(unsigned long seq) {
-  const double phase_ratio = compute_phase_ratio();
-  return ITelemetry::Airdata {
-    .sequence = seq,
-    .alpha = interpolate_value(phase_ratio, kAirdataAlpha),
-    .beta = interpolate_value(phase_ratio, kAirdataBeta),
-    .q = interpolate_value(phase_ratio, kAirdataQ),
-    .p = interpolate_value(phase_ratio, kAirdataBaro),
-    .t = interpolate_value(phase_ratio, kAirdataOat),
+ITelemetry::Message make_message(uint16_t id, uint32_t seq, float value) {
+  ITelemetry::Message m {
+    .id = id,
+    .data = { 0 },
   };
+  *((uint32_t*) m.data) = seq;
+  *((float*) (m.data + 4)) = value;
+  return m;
+}
+
+void FakeTelemetry::make_airdata() {
+  const double phase_ratio = compute_phase_ratio();
+  ready_to_receive_.push_back(
+      make_message(
+          TelemetryIds::AIRDATA_ALPHA,
+          seq_counter_,
+          interpolate_value(phase_ratio, kAirdataAlpha)));
+  ready_to_receive_.push_back(
+      make_message(
+          TelemetryIds::AIRDATA_BETA,
+          seq_counter_,
+          interpolate_value(phase_ratio, kAirdataBeta)));
+  ready_to_receive_.push_back(
+      make_message(
+          TelemetryIds::AIRDATA_Q,
+          seq_counter_,
+          interpolate_value(phase_ratio, kAirdataQ)));
+  ready_to_receive_.push_back(
+      make_message(
+          TelemetryIds::AIRDATA_P,
+          seq_counter_,
+          interpolate_value(phase_ratio, kAirdataP)));
+  ready_to_receive_.push_back(
+      make_message(
+          TelemetryIds::AIRDATA_T,
+          seq_counter_,
+          interpolate_value(phase_ratio, kAirdataT)));
+  seq_counter_++;
 }
 
 FakeTelemetry::FakeTelemetry()
     : seq_counter_(0) {}
 
-ITelemetry::Sample FakeTelemetry::receiveSample() {
-  std::this_thread::sleep_for(kSendDelay);
-  return make_airdata(seq_counter_++);
+ITelemetry::Message FakeTelemetry::receive() {
+  if (ready_to_receive_.empty()) {
+    std::this_thread::sleep_for(kSendDelay);
+    make_airdata();
+  }
+  Message m = ready_to_receive_.front();
+  ready_to_receive_.pop_front();
+  return m;
 }
 
-void FakeTelemetry::sendSample(ITelemetry::Sample s) {
+void FakeTelemetry::send(ITelemetry::Message s) {
+  // Do nothing
+}
+
+void FakeTelemetry::send(std::vector<ITelemetry::Message> m) {
   // Do nothing
 }
 

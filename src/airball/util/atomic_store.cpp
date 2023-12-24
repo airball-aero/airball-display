@@ -2,6 +2,7 @@
 #include <vector>
 #include <unistd.h>
 #include <iostream>
+#include <sstream>
 
 #include "atomic_store.h"
 
@@ -21,7 +22,16 @@ struct AtomicStore::Header {
   uint32_t magic_number_1;
 };
 
-#define CHECK(x) if (!(x)) { std::cout << "Check failed " << __FILE__ << ":" << __LINE__ << std::endl; exit(-1); }
+std::string errstr(const char* msg, const char* file, int line) {
+  std::ostringstream os;
+  os << msg << " " << file << ":" << line;
+  return os.str();
+}
+
+#define CHECK(x) \
+  if (!(x)) { \
+    throw std::runtime_error(errstr("Check failed", __FILE__, __LINE__)); \
+  }
 
 AtomicStore::AtomicStore(const std::string &path) : path_(path) {}
 
@@ -40,7 +50,11 @@ void AtomicStore::initialize(size_t page_size, size_t bank_size) {
 }
 
  bool AtomicStore::is_initialized() {
-  return is_correct(read_header().get());
+  try {
+    return is_correct(read_header().get());
+  } catch (...) {
+    return false;
+  }
 }
 
 size_t AtomicStore::page_size() {

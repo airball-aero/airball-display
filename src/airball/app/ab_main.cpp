@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <memory>
+#include <fstream>
 #include "gflags/gflags.h"
 
 #include "../../framework/Application.h"
@@ -39,7 +40,7 @@ DEFINE_string(telemetry_log_path, "airball.log", "File path for log telemetry");
 
 DEFINE_string(sound_device, "hw:0", "ALSA sound device");
 
-DEFINE_string(settings_file_path, "airball-settings.json", "Path to settings file");
+DEFINE_string(settings_file_path, "airball-settings", "Path to settings file");
 
 DEFINE_string(settings_input_device_path, "", "Path to settings adjustment /dev/input device");
 
@@ -92,6 +93,14 @@ std::unique_ptr<ITelemetry> buildTelemetry() {
   exit(-1);
 }
 
+void maybeMakeSettingsFile() {
+  std::ifstream f(FLAGS_settings_file_path);
+  if (!f.good()) {
+    std::ofstream of(FLAGS_settings_file_path);
+    of << 0x00;
+    of.close();
+  }
+}
 
 class AirballApplication : public Application<IAirballModel> {
 public:
@@ -102,12 +111,13 @@ protected:
   void initialize() override {
     setFrameInterval(kFrameInterval);
     telemetry_ = buildTelemetry();
+    maybeMakeSettingsFile();
     settings_ = std::make_unique<Settings>(
         FLAGS_settings_file_path,
         FLAGS_settings_input_device_path,
         eventQueue(),
-        [this](ITelemetry::Sample sample) {
-          telemetry_->sendSample(sample);
+        [this](ITelemetry::Message message) {
+          telemetry_->send(message);
         });
     setScreen(buildScreen(settings_.get()));
     airdata_ = std::make_unique<Airdata>(settings_.get());
@@ -120,22 +130,13 @@ protected:
 
     telemetry_read_thread_ = std::thread([&]() {
       while (true) {
-        ITelemetry::Sample s = telemetry_->receiveSample();
-        if (std::holds_alternative<ITelemetry::Airdata>(s)) {
-          eventQueue()->enqueue([this, s]() {
-            airdata_->update(std::get<ITelemetry::Airdata>(s));
-          });
-        }
-        if (std::holds_alternative<ITelemetry::Settings>(s)) {
-          eventQueue()->enqueue([this, s]() {
-            settings_->acceptSettings(std::get<ITelemetry::Settings>(s));
-          });
-        }
-        if (std::holds_alternative<ITelemetry::SettingsRequest>(s)) {
-          eventQueue()->enqueue([this, s]() {
-            settings_->acceptSettingsRequest(std::get<ITelemetry::SettingsRequest>(s));
-          });
-        }
+        ITelemetry::Message m = telemetry_->receive();
+        eventQueue()->enqueue([this, m]() {
+          airdata_->update(m);
+        });
+        eventQueue()->enqueue([this, m]() {
+          settings_->acceptMessage(m);
+        });
       }
     });
   }

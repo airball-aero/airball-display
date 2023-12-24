@@ -1,8 +1,7 @@
 #ifndef AIRBALL_TELEMETRY_ITELEMETRY_H
 #define AIRBALL_TELEMETRY_ITELEMETRY_H
 
-#include <string>
-#include <variant>
+#include <vector>
 
 namespace airball {
 
@@ -14,10 +13,15 @@ public:
   };
 
   // Receive the next Message. Blocks until a Message is received.
-  virtual Message receiveMessage() = 0;
+  virtual Message receive() = 0;
 
   // Send a Message. This is broadcast to everyone on the network.
-  virtual void sendMessage(Message s) = 0;
+  virtual void send(Message s) = 0;
+
+  // Send a series of Messages. This is broadcast to everyone on the network.
+  // This method is merely an optimization, in case several Messages are ready
+  // at once and can be bundled together.
+  virtual void send(std::vector<Message> s) = 0;
 };
 
 }  // namespace airball

@@ -13,51 +13,6 @@ constexpr double kSamplesPerSecond = 20;
 constexpr static std::chrono::milliseconds
     kAirdataExpiryPeriod(250);
 
-template <class T>
-class AssignOnceValue {
-public:
-  AssignOnceValue() : assigned_(false) {}
-
-  void set(T v) {
-    if (!assigned_) {
-      v_ = v;
-    }
-  }
-
-  T get() {
-    return v_;
-  }
-
-  bool assigned() {
-    return assigned_;
-  }
-
-private:
-  bool assigned_;
-  T v_;
-};
-
-struct RawData {
-  explicit RawData(uint16_t _seq) : seq(_seq) {}
-
-  bool assigned() {
-    return
-        alpha.assigned() &&
-        beta.assigned() &&
-        q.assigned() &&
-        p.assigned() &&
-        t.assigned();
-  }
-
-  const uint16_t seq;
-
-  AssignOnceValue<double> alpha;
-  AssignOnceValue<double> beta;
-  AssignOnceValue<double> q;
-  AssignOnceValue<double> p;
-  AssignOnceValue<double> t;
-};
-
 struct AirdataMessage {
   uint16_t id;
   uint32_t seq;
@@ -69,6 +24,7 @@ AirdataMessage toAirdataMessage(ITelemetry::Message message) {
   r.id = message.id;
   r.seq = *((uint32_t *) message.data);
   r.value = *((float *) (message.data + 4));
+  return r;
 }
 
 Airdata::Airdata(ISettings* settings)
@@ -100,7 +56,7 @@ void Airdata::update(const ITelemetry::Message message) {
   AirdataMessage am = toAirdataMessage(message);
 
   if (raw_ == nullptr || raw_->seq != am.seq) {
-    raw_ = std::make_unique<RawData>(message.id);
+    raw_ = std::make_unique<RawData>(am.seq);
   }
 
   switch (am.id) {
@@ -129,6 +85,7 @@ void Airdata::update(const ITelemetry::Message message) {
         settings_->baro_setting() * kPascalsPerInHg,
         settings_->ball_time_constant(),
         settings_->vsi_time_constant());
+    raw_ = nullptr;
   }
 }
 

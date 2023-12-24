@@ -17,8 +17,6 @@ class Airdata : public IAirdata {
 public:
   Airdata(ISettings* settings);
 
-  ~Airdata();
-
   [[nodiscard]] bool valid() const override;
 
   [[nodiscard]] double altitude() const override { return altitude_; }
@@ -29,6 +27,52 @@ public:
   void update(ITelemetry::Message message) override;
 
 private:
+  template <class T>
+  class AssignOnceValue {
+  public:
+    AssignOnceValue() : assigned_(false) {}
+
+    void set(T v) {
+      if (!assigned_) {
+        v_ = v;
+        assigned_ = true;
+      }
+    }
+
+    T get() {
+      return v_;
+    }
+
+    bool assigned() {
+      return assigned_;
+    }
+
+  private:
+    bool assigned_;
+    T v_;
+  };
+
+  struct RawData {
+    explicit RawData(uint16_t _seq) : seq(_seq) {}
+
+    bool assigned() {
+      return
+          alpha.assigned() &&
+          beta.assigned() &&
+          q.assigned() &&
+          p.assigned() &&
+          t.assigned();
+    }
+
+    const uint16_t seq;
+
+    AssignOnceValue<double> alpha;
+    AssignOnceValue<double> beta;
+    AssignOnceValue<double> q;
+    AssignOnceValue<double> p;
+    AssignOnceValue<double> t;
+  };
+
   void update(
       double qnh,
       double ball_time_constant,

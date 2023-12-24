@@ -1,6 +1,8 @@
 #include "UdpTelemetry.h"
 
-#include "NMEAFormat.h"
+#include <vector>
+
+#include "MessageBlockFormat.h"
 
 namespace airball {
 
@@ -8,13 +10,23 @@ UdpTelemetry::UdpTelemetry(std::string broadcastAddress, int udpPort, std::strin
     : reader_(udpPort, networkInterface),
       sender_(broadcastAddress, udpPort) {}
 
-ITelemetry::Sample
-UdpTelemetry::receiveSample() {
-  return NMEAFormat::unmarshal(reader_.read());
+ITelemetry::Message
+UdpTelemetry::receive() {
+  while (incoming_.empty()) {
+    auto r = MessageBlockFormat::unmarshal(reader_.read());
+    incoming_.assign(r.begin(), r.end());
+  }
+  auto m = incoming_.front();
+  incoming_.pop_front();
+  return m;
 }
 
-void UdpTelemetry::sendSample(ITelemetry::Sample s) {
-  sender_.send(NMEAFormat::marshal(s));
+void UdpTelemetry::send(ITelemetry::Message m) {
+  send(std::vector<ITelemetry::Message> { m });
 }
 
-} // airball
+void UdpTelemetry::send(std::vector<ITelemetry::Message> m) {
+  sender_.send(MessageBlockFormat::marshal(m));
+}
+
+} // namespace airball

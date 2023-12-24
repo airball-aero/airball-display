@@ -3,7 +3,7 @@ add_library(util
         file_write_watch.cpp
         one_shot_timer.cpp
         string_compression.cpp
-        atomic_store.cpp)
+        atomic_store.cpp Base16Encoding.cpp Base16Encoding.h)
 target_link_libraries(util
         z)
 
@@ -30,4 +30,9 @@ target_link_libraries(string_compression_test
 add_executable(atomic_store_test
         atomic_store_test_main.cpp)
 target_link_libraries(atomic_store_test
+        util)
+
+add_executable(Base16EncodingTest
+        Base16EncodingTest_main.cpp)
+target_link_libraries(Base16EncodingTest
         util)

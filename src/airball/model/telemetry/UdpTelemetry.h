@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <chrono>
+#include <deque>
 
 #include "ITelemetry.h"
 #include "UdpPacketReader.h"
@@ -15,12 +16,14 @@ public:
   UdpTelemetry(std::string broadcastAddress, int udpPort, std::string networkInterface);
   ~UdpTelemetry() = default;
 
-  Sample receiveSample() override;
-  void sendSample(Sample s) override;
+  Message receive() override;
+  void send(Message m) override;
+  void send(std::vector<Message> m) override;
 
 private:
   UdpPacketReader reader_;
   UdpPacketSender sender_;
+  std::deque<Message> incoming_;
 };
 
 } // airball

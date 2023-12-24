@@ -190,7 +190,9 @@ Settings::~Settings() {}
 
 void Settings::loadFromFile() {
   AtomicStore s(path_);
-  s.initialize(kStorePageSize, kStoreBankSize);
+  if (!s.is_initialized()) {
+    s.initialize(kStorePageSize, kStoreBankSize);
+  }
   loadFromString(s.read_payload());
   loadedFromFile_ = true;
 }
