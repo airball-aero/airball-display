@@ -3,7 +3,9 @@ add_library(util
         file_write_watch.cpp
         one_shot_timer.cpp
         string_compression.cpp
-        atomic_store.cpp Base16Encoding.cpp Base16Encoding.h)
+        atomic_store.cpp
+        Base16Encoding.cpp
+        FileAdapter.cpp)
 target_link_libraries(util
         z)
 

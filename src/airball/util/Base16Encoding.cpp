@@ -28,30 +28,30 @@ std::pair<CharToCharMap, CharToCharMap> maps = makeMaps();
 const CharToCharMap kNyblToChar = maps.first;
 const CharToCharMap kCharToNybl = maps.second;
 
-uint8_t nybl1(uint8_t byte) {
+uint8_t leastSignificantNybl(uint8_t byte) {
   return byte & 0x0f;
 }
 
-uint8_t nybl0(uint8_t byte) {
+uint8_t mostSignificantNybl(uint8_t byte) {
   return (byte >> 4) & 0x0f;
 }
 
-uint8_t byte(uint8_t nybl0, uint8_t nybl1) {
-  return (nybl0 << 4) + nybl1;
+uint8_t byte(uint8_t msNybl, uint8_t lsNybl) {
+  return (msNybl << 4) + lsNybl;
 }
 
 std::string Base16Encoding::encode(const char* decoded, size_t len) {
   std::string encoded(len * 2, 0);
   for (int i = 0; i < len; i++) {
-    encoded[2 * i] = kNyblToChar.at(nybl0(decoded[i]));
-    encoded[2 * i + 1] = kNyblToChar.at(nybl1(decoded[i]));
+    encoded[2 * i] = kNyblToChar.at(mostSignificantNybl(decoded[i]));
+    encoded[2 * i + 1] = kNyblToChar.at(leastSignificantNybl(decoded[i]));
   }
   return encoded;
 }
 
 std::string Base16Encoding::decode(const char* encoded, size_t len) {
   std::string decoded(len / 2, 0);
-  for (int i = 0; i < len; i++) {
+  for (int i = 0; i < len / 2; i++) {
     decoded[i] = byte(
         kCharToNybl.at(encoded[2 * i]),
         kCharToNybl.at(encoded[2 * i + 1]));

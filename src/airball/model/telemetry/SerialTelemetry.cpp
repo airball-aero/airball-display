@@ -1,9 +1,7 @@
 #include "SerialTelemetry.h"
 
-#include <fcntl.h>
 #include <unistd.h>
 #include <optional>
-#include <iostream>
 
 #include "../../util/Base16Encoding.h"
 
@@ -13,53 +11,28 @@ auto kReopenTimeout = std::chrono::milliseconds(50);
 auto kReadTimeoutMicros = std::chrono::microseconds (500);
 size_t kReadBufSize = 64;
 
-int readWithTimeout(int fd, char* buf, int n) {
-  fd_set set;
-  FD_ZERO(&set);
-  FD_SET(fd, &set);
-
-  struct timeval timeout;
-  timeout.tv_sec = 0;
-  timeout.tv_usec = kReadTimeoutMicros.count();
-
-  std::cout << "select" << std::endl;
-  int rv = select(1, &set, NULL, NULL, &timeout);
-  std::cout << "done select" << std::endl;
-
-  if (rv <= 0) {
-    std::cout << "nada" << std::endl;
-    return rv;
-  } else {
-    int c = read( fd, buf, n);
-    std::cout << "read " << c << std::endl;
-  }
-}
-
-SerialTelemetry::SerialTelemetry(std::string path)
-    : path_(path) {
+SerialTelemetry::SerialTelemetry(IFileAdapter* file)
+    : file_(file), running_(true) {
   t_ = std::thread([this]() {
     std::string readBuf(kReadBufSize, 0);
 
-    while (true) {
-      int fd = open(path_.c_str(), O_RDWR, 0);
-      if (fd < 0) {
+    while (running_) {
+      int rc = file_->open();
+      if (rc < 0) {
         std::this_thread::sleep_for(kReopenTimeout);
         continue;
       }
 
-      while (true) {
-
+      while (running_) {
         {
-          int n = readWithTimeout(fd, readBuf.data(), readBuf.length());
+          int n = file_->readWithTimeout(readBuf.data(), readBuf.length(), kReadTimeoutMicros);
           if (n < 0) {
-            std::cout << "read err" << std::endl;
             break;
           } else if (n > 0) {
             std::unique_lock<std::mutex> lock(mu_);
             for (int i = 0; i < n; i++) {
               incomingEncodedBytes_.push_back(readBuf.at(i));
             }
-            std::cout << "readWait_.notify_one()" << std::endl;
             readWait_.notify_one();
           }
         }
@@ -81,7 +54,7 @@ SerialTelemetry::SerialTelemetry(std::string path)
               (const char*) &(nextOutgoing.value()),
               sizeof(Message));
           outgoingData.push_back('\n');
-          int n = write(fd, outgoingData.data(), outgoingData.size());
+          int n = file_->write(outgoingData.data(), outgoingData.size());
           if (n == outgoingData.size()) {
             std::unique_lock<std::mutex> lock(mu_);
             outgoingMessages_.pop_front();
@@ -96,21 +69,23 @@ SerialTelemetry::SerialTelemetry(std::string path)
         }
       }
 
-      close(fd);
+      file_->close();
     }
   });
+}
+
+SerialTelemetry::~SerialTelemetry() {
+  running_ = false;
+  t_.join();
 }
 
 ITelemetry::Message SerialTelemetry::receive() {
   std::string incomingEncodedChunk;
   while (true) {
     bool chunk = false;
-    std::cout << "while" << std::endl;
     {
       std::unique_lock<std::mutex> lock(mu_);
-      std::cout << "readWait_.wait" << std::endl;
       readWait_.wait(lock, [this]() { return !incomingEncodedBytes_.empty(); });
-      std::cout << "readWait_ done wait" << std::endl;
       while (!incomingEncodedBytes_.empty()) {
         char c = incomingEncodedBytes_.front();
         incomingEncodedBytes_.pop_front();
@@ -123,11 +98,15 @@ ITelemetry::Message SerialTelemetry::receive() {
       }
     }
     if (chunk) {
-      std::string incomingDecodedChunk = Base16Encoding::decode(
-          incomingEncodedChunk.data(),
-          incomingEncodedChunk.size());
-      if (incomingDecodedChunk.size() == sizeof(Message)) {
-        return *((Message *) incomingDecodedChunk.data());
+      try {
+        std::string incomingDecodedChunk = Base16Encoding::decode(
+            incomingEncodedChunk.data(),
+            incomingEncodedChunk.size());
+        if (incomingDecodedChunk.size() == sizeof(Message)) {
+          return *((Message *) incomingDecodedChunk.data());
+        }
+      } catch (std::exception &e) {
+        incomingEncodedChunk = "";
       }
     }
   }
