@@ -9,13 +9,13 @@
 
 #include "ITelemetry.h"
 
-#include "../../util/IFileAdapter.h"
+#include "../../util/IDeviceFileAdapter.h"
 
 namespace airball {
 
 class SerialTelemetry : public ITelemetry {
 public:
-  SerialTelemetry(IFileAdapter* file);
+  SerialTelemetry(IDeviceFileAdapter* file);
   ~SerialTelemetry();
 
   Message receive() override;
@@ -23,7 +23,7 @@ public:
   void send(std::vector<Message> m) override;
 
 private:
-  IFileAdapter* file_;
+  IDeviceFileAdapter* file_;
   std::thread t_;
 
   std::mutex mu_;

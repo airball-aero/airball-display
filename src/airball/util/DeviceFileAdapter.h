@@ -1,15 +1,15 @@
-#ifndef SRC_AIRBALL_UTIL_FILEADAPTER_H
-#define SRC_AIRBALL_UTIL_FILEADAPTER_H
+#ifndef SRC_AIRBALL_UTIL_DEVICEFILEADAPTER_H
+#define SRC_AIRBALL_UTIL_DEVICEFILEADAPTER_H
 
 #include <string>
 
-#include "IFileAdapter.h"
+#include "IDeviceFileAdapter.h"
 
 namespace airball {
 
-class FileAdapter : public IFileAdapter {
+class DeviceFileAdapter : public IDeviceFileAdapter {
 public:
-  FileAdapter(std::string path, int flags);
+  DeviceFileAdapter(std::string path, int flags);
 
   int open() override;
   int close() override;
@@ -24,4 +24,4 @@ private:
 
 } // namespace airball
 
-#endif //SRC_AIRBALL_UTIL_FILEADAPTER_H
+#endif //SRC_AIRBALL_UTIL_DEVICEFILEADAPTER_H

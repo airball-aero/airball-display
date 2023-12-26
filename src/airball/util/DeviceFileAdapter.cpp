@@ -1,24 +1,24 @@
-#include "FileAdapter.h"
+#include "DeviceFileAdapter.h"
 #include <fcntl.h>
 #include <unistd.h>
 
 namespace airball {
 
-FileAdapter::FileAdapter(std::string path, int flags)
+DeviceFileAdapter::DeviceFileAdapter(std::string path, int flags)
     : path_(path), flags_(flags), fd_(-1) {}
 
-int FileAdapter::open() {
+int DeviceFileAdapter::open() {
   fd_ = ::open(path_.c_str(), flags_);
   if (fd_ < 0) {
     return -1;
   }
 }
 
-int FileAdapter::close() {
+int DeviceFileAdapter::close() {
   return ::close(fd_);
 }
 
-int FileAdapter::readWithTimeout(char* buf, size_t n, std::chrono::duration<int, std::micro> timeout) {
+int DeviceFileAdapter::readWithTimeout(char* buf, size_t n, std::chrono::duration<int, std::micro> timeout) {
   fd_set set;
   FD_ZERO(&set);
   FD_SET(fd_, &set);
@@ -36,7 +36,7 @@ int FileAdapter::readWithTimeout(char* buf, size_t n, std::chrono::duration<int,
   }
 }
 
-int FileAdapter::write(char* buf, size_t n) {
+int DeviceFileAdapter::write(char* buf, size_t n) {
   return ::write(fd_, buf, n);
 }
 

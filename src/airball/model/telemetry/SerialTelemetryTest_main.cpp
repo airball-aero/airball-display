@@ -6,7 +6,7 @@
 const int kCount = 1024;
 const int kChunkSizeIncludingNewline = (sizeof(airball::ITelemetry::Message) * 2) + 1;
 
-class TestFileAdapter : public airball::IFileAdapter {
+class TestFileAdapter : public airball::IDeviceFileAdapter {
 public:
   TestFileAdapter(std::string dataToSend)
       : dataToSend_(dataToSend), blockOnRead_(false) {

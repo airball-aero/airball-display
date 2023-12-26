@@ -1,11 +1,11 @@
-#ifndef SRC_AIRBALL_UTIL_IFILEADAPTER_H
-#define SRC_AIRBALL_UTIL_IFILEADAPTER_H
+#ifndef SRC_AIRBALL_UTIL_IDEVICEFILEADAPTER_H
+#define SRC_AIRBALL_UTIL_IDEVICEFILEADAPTER_H
 
 #include <chrono>
 
 namespace airball {
 
-class IFileAdapter {
+class IDeviceFileAdapter {
 public:
   virtual int open() = 0;
   virtual int close() = 0;
@@ -15,4 +15,4 @@ public:
 
 } // namespace airball
 
-#endif //SRC_AIRBALL_UTIL_IFILEADAPTER_H
+#endif //SRC_AIRBALL_UTIL_IDEVICEFILEADAPTER_H

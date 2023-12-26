@@ -5,7 +5,7 @@ add_library(util
         string_compression.cpp
         atomic_store.cpp
         Base16Encoding.cpp
-        FileAdapter.cpp)
+        DeviceFileAdapter.cpp)
 target_link_libraries(util
         z)
 

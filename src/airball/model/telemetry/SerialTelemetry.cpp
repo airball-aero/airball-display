@@ -11,7 +11,7 @@ auto kReopenTimeout = std::chrono::milliseconds(50);
 auto kReadTimeoutMicros = std::chrono::microseconds (500);
 size_t kReadBufSize = 64;
 
-SerialTelemetry::SerialTelemetry(IFileAdapter* file)
+SerialTelemetry::SerialTelemetry(IDeviceFileAdapter* file)
     : file_(file), running_(true) {
   t_ = std::thread([this]() {
     std::string readBuf(kReadBufSize, 0);
